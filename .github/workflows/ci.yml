@@ -1,0 +1,83 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+  schedule:
+    # daily — catch new selenium/appium releases and re-verify the territory
+    - cron: "17 6 * * *"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.25.x"
+      - run: go build ./...
+      - run: go vet ./...
+      - run: gofmt -l . | tee /tmp/fmt && test ! -s /tmp/fmt
+
+  # Did an upstream cut a new selenium/appium version? Harvest appends only
+  # missing snapshots; if anything new lands, surface it (the working tree
+  # becomes dirty) so a maintainer can probe+commit it.
+  harvest-drift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.25.x"
+      - name: harvest latest published versions
+        run: go run ./cmd/harvest
+      - name: detect new snapshots
+        run: |
+          if [ -n "$(git status --porcelain specs/)" ]; then
+            echo "::notice::new upstream version(s) appeared:"
+            git status --porcelain specs/
+            git --no-pager diff --stat specs/ || true
+          else
+            echo "no new upstream versions; specs/ current"
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: harvested-specs
+          path: specs/**/*@*.json
+
+  # Verify snapshots against a real binary. Chrome ships on the runner; we
+  # start chromedriver and probe. "Some degree of success": the verified core
+  # must clear a floor, or the protocol shape has drifted under us.
+  probe-chrome:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.25.x"
+      - uses: browser-actions/setup-chrome@v1
+        id: chrome
+        with:
+          install-chromedriver: true
+      - name: start chromedriver
+        run: |
+          chromedriver --port=9515 &
+          for i in $(seq 1 20); do
+            curl -sf http://localhost:9515/status >/dev/null && break || sleep 0.5
+          done
+      - name: probe
+        run: go run ./cmd/probe http://localhost:9515 "chromedriver@ci"
+      - name: assert floor
+        run: |
+          python3 - <<'PY'
+          import json, glob, sys
+          f = sorted(glob.glob("specs/probes/chromedriver@ci.json"))[-1]
+          d = json.load(open(f))
+          ex = d["tally"].get("exists", 0)
+          print(f"chromedriver verified routes: {ex} (tally {d['tally']})")
+          # the W3C core alone is ~76; demand a conservative floor so a real
+          # regression fails CI but version drift doesn't.
+          floor = 60
+          sys.exit(0 if ex >= floor else f"verified routes {ex} below floor {floor}")
+          PY

@@ -1,0 +1,120 @@
+{
+ "source": "npm:@wdio/protocols/chromium",
+ "version": "9.28.0",
+ "fetched": "2026-06-11",
+ "count": 28,
+ "routes": [
+  {
+   "method": "DELETE",
+   "path": "/session/:sessionId/chromium/network_conditions"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/alert"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/autoreport"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/chromium/heap_snapshot"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/chromium/network_conditions"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/element/:elementId/screenshot"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/element/:elementId/value"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/goog/cast/get_issue_message"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/goog/cast/get_sinks"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/is_loading"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/network_connection"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/se/log/types"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/autoreport"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/chromium/launch_app"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/chromium/network_conditions"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/chromium/send_command"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/chromium/send_command_and_get_result"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/element/:elementId/hover"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/file"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/goog/cast/set_sink_to_use"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/goog/cast/start_tab_mirroring"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/goog/cast/stop_casting"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/goog/page/freeze"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/goog/page/resume"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/network_connection"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/se/log"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/touch/pinch"
+  },
+  {
+   "method": "POST",
+   "path": "/shutdown"
+  }
+ ]
+}

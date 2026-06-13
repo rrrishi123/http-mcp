@@ -1,0 +1,28 @@
+{
+ "source": "npm:@wdio/protocols/gecko",
+ "version": "9.28.0",
+ "fetched": "2026-06-11",
+ "count": 5,
+ "routes": [
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/moz/addon/uninstall"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/moz/context"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/moz/screenshot/full"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/moz/addon/install"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/moz/context"
+  }
+ ]
+}

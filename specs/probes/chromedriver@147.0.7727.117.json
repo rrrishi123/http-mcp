@@ -1,0 +1,3207 @@
+{
+ "binary": "chromedriver@147.0.7727.117",
+ "base_url": "http://localhost:9515",
+ "probed": "2026-06-11",
+ "union_size": 281,
+ "tally": {
+  "exists": 167,
+  "absent": 114
+ },
+ "results": [
+  {
+   "method": "DELETE",
+   "path": "/session/:sessionId",
+   "verdict": "exists",
+   "http": 200,
+   "error": "",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0",
+    "webdriver@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "DELETE",
+   "path": "/session/:sessionId/actions",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0",
+    "webdriver@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "DELETE",
+   "path": "/session/:sessionId/chromium/network_conditions",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "chromium@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "DELETE",
+   "path": "/session/:sessionId/cookie",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0",
+    "webdriver@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "DELETE",
+   "path": "/session/:sessionId/cookie/:name",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0",
+    "webdriver@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "DELETE",
+   "path": "/session/:sessionId/deviceposture",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@10.6.0"
+   ]
+  },
+  {
+   "method": "DELETE",
+   "path": "/session/:sessionId/local_storage",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "DELETE",
+   "path": "/session/:sessionId/local_storage/key/:key",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "DELETE",
+   "path": "/session/:sessionId/pressuresource/:pressureSourceType",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@10.6.0"
+   ]
+  },
+  {
+   "method": "DELETE",
+   "path": "/session/:sessionId/se/files",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "selenium-grid@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "DELETE",
+   "path": "/session/:sessionId/sensor/:type",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "webdriver@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "DELETE",
+   "path": "/session/:sessionId/sensors/:sensorType",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@10.6.0"
+   ]
+  },
+  {
+   "method": "DELETE",
+   "path": "/session/:sessionId/session_storage",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "DELETE",
+   "path": "/session/:sessionId/session_storage/key/:key",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "DELETE",
+   "path": "/session/:sessionId/webauthn/authenticator/:authenticatorId",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0",
+    "webdriver@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "DELETE",
+   "path": "/session/:sessionId/webauthn/authenticator/:authenticatorId/credentials",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0",
+    "webdriver@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "DELETE",
+   "path": "/session/:sessionId/webauthn/authenticator/:authenticatorId/credentials/:credentialId",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0",
+    "webdriver@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "DELETE",
+   "path": "/session/:sessionId/window",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0",
+    "webdriver@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/appium/sessions",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@10.6.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/grid/api/hub/",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "selenium-grid@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/grid/api/testsession?session=:session",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "selenium-grid@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/lifecycle-manager?action=:action",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "selenium-grid@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/alert",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "chromium@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/alert/text",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0",
+    "webdriver@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/alert_text",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/appium/capabilities",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@10.6.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/appium/commands",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@10.6.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/appium/device/app_state",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/appium/device/current_activity",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/appium/device/current_package",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/appium/device/display_density",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/appium/device/is_keyboard_shown",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/appium/device/system_bars",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/appium/device/system_time",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/appium/extensions",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@10.6.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/appium/settings",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/application_cache/status",
+   "verdict": "exists",
+   "http": 200,
+   "error": "",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/autoreport",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "chromium@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/chromium/heap_snapshot",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "chromium@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/chromium/network_conditions",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "chromium@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/context",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/contexts",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/cookie",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0",
+    "webdriver@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/cookie/:name",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0",
+    "webdriver@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/element/:elementId",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/element/:elementId/attribute/:name",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0",
+    "webdriver@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/element/:elementId/computedlabel",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@10.6.0",
+    "webdriver@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/element/:elementId/computedrole",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@10.6.0",
+    "webdriver@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/element/:elementId/css/:propertyName",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0",
+    "webdriver@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/element/:elementId/displayed",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0",
+    "webdriver@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/element/:elementId/enabled",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0",
+    "webdriver@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/element/:elementId/equals/:otherId",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/element/:elementId/location",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/element/:elementId/location_in_view",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/element/:elementId/name",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0",
+    "webdriver@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/element/:elementId/pageIndex",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0",
+    "mjsonwp@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/element/:elementId/property/:name",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0",
+    "webdriver@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/element/:elementId/rect",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0",
+    "webdriver@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/element/:elementId/screenshot",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0",
+    "chromium@wdio-protocols-9.28.0",
+    "webdriver@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/element/:elementId/selected",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0",
+    "webdriver@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/element/:elementId/shadow",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@10.6.0",
+    "base-driver@9.9.0",
+    "webdriver@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/element/:elementId/size",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/element/:elementId/text",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0",
+    "webdriver@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/element/:elementId/value",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "chromium@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/element/active",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0",
+    "webdriver@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/fedcm/accountlist",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@10.6.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/fedcm/getdialogtype",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@10.6.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/fedcm/gettitle",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@10.6.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/goog/cast/get_issue_message",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "chromium@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/goog/cast/get_sinks",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "chromium@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/ime/activated",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/ime/active_engine",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/ime/available_engines",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/is_loading",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "chromium@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/local_storage",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/local_storage/key/:key",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/local_storage/size",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/location",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/log/types",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/moz/addon/uninstall",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "gecko@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/moz/context",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "gecko@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/moz/screenshot/full",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "gecko@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/network_connection",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0",
+    "chromium@wdio-protocols-9.28.0",
+    "mjsonwp@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/orientation",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/privacy",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@10.6.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/rotation",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/screenshot",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0",
+    "webdriver@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/screenshot/:elementId",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/se/files",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "selenium-grid@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/se/log/types",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0",
+    "chromium@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/sensor/:type",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "webdriver@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/sensors/:sensorType",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@10.6.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/session_storage",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/session_storage/key/:key",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/session_storage/size",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/source",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0",
+    "webdriver@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/timeouts",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0",
+    "webdriver@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/title",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0",
+    "webdriver@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/touch/multi/perform",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "mjsonwp@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/touch/perform",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "mjsonwp@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/url",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0",
+    "webdriver@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/webauthn/authenticator/:authenticatorId/credentials",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0",
+    "webdriver@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/window",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0",
+    "webdriver@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/window/:windowhandle/position",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/window/:windowhandle/size",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/window/handle",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/window/handles",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0",
+    "webdriver@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/window/rect",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0",
+    "webdriver@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/window_handle",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/window_handles",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/sessions",
+   "verdict": "exists",
+   "http": 200,
+   "error": "",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "GET",
+   "path": "/status",
+   "verdict": "exists",
+   "http": 200,
+   "error": "",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0",
+    "webdriver@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/graphql",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "selenium-grid@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/grid/api/proxy",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "selenium-grid@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session",
+   "verdict": "exists",
+   "http": 400,
+   "error": "invalid argument",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0",
+    "webdriver@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/:vendor/cdp/execute",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/accept_alert",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/actions",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0",
+    "webdriver@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/alert/accept",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0",
+    "webdriver@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/alert/dismiss",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0",
+    "webdriver@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/alert/text",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0",
+    "webdriver@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/alert_text",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/app/background",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/app/close",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/app/end_test_coverage",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/app/launch",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/app/reset",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/app/strings",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/compare_images",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@1.x"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/device/activate_app",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/device/app_installed",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/device/app_state",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/device/finger_print",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/device/get_clipboard",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/device/gsm_call",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/device/gsm_signal",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/device/gsm_voice",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/device/hide_keyboard",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/device/install_app",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/device/is_locked",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/device/keyevent",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/device/lock",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/device/long_press_keycode",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/device/network_speed",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/device/open_notifications",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/device/power_ac",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/device/power_capacity",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/device/press_keycode",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/device/pull_file",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/device/pull_folder",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/device/push_file",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/device/remove_app",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/device/rotate",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@1.x"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/device/send_sms",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/device/set_clipboard",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/device/shake",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/device/start_activity",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/device/system_time",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/device/terminate_app",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/device/toggle_airplane_mode",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/device/toggle_data",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/device/toggle_location_services",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/device/toggle_wifi",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/device/unlock",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/element/:elementId/replace_value",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/element/:elementId/value",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/events",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/execute_driver",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@1.x"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/getPerformanceData",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/log_event",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/performanceData/types",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/receive_async_response",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/settings",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/simulator/toggle_touch_id_enrollment",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/simulator/touch_id",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/start_recording_screen",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/stop_recording_screen",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/autoreport",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "chromium@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/back",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0",
+    "webdriver@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/buttondown",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/buttonup",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/chromium/launch_app",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "chromium@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/chromium/network_conditions",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "chromium@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/chromium/send_command",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "chromium@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/chromium/send_command_and_get_result",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "chromium@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/click",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/context",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/cookie",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0",
+    "webdriver@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/custom-handlers/set-mode",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@10.6.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/deviceposture",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@10.6.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/dismiss_alert",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/doubleclick",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/element",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0",
+    "webdriver@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/element/:elementId/clear",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0",
+    "webdriver@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/element/:elementId/click",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0",
+    "webdriver@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/element/:elementId/element",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0",
+    "webdriver@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/element/:elementId/elements",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0",
+    "webdriver@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/element/:elementId/hover",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "chromium@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/element/:elementId/submit",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/element/:elementId/value",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0",
+    "webdriver@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/element/active",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/elements",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0",
+    "webdriver@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/execute",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/execute/async",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0",
+    "webdriver@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/execute/sync",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0",
+    "webdriver@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/execute_async",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/fedcm/canceldialog",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@10.6.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/fedcm/clickdialogbutton",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@10.6.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/fedcm/resetcooldown",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@10.6.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/fedcm/selectaccount",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@10.6.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/fedcm/setdelayenabled",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@10.6.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/file",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "chromium@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/forward",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0",
+    "webdriver@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/frame",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0",
+    "webdriver@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/frame/parent",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0",
+    "webdriver@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/goog/cast/set_sink_to_use",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "chromium@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/goog/cast/start_tab_mirroring",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "chromium@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/goog/cast/stop_casting",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "chromium@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/goog/page/freeze",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "chromium@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/goog/page/resume",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "chromium@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/ime/activate",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/ime/deactivate",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/keys",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/local_storage",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/location",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/log",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/moveto",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/moz/addon/install",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "gecko@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/moz/context",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "gecko@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/network_connection",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0",
+    "chromium@wdio-protocols-9.28.0",
+    "mjsonwp@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/orientation",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/permissions",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@10.6.0",
+    "webdriver@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/pressuresource",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@10.6.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/pressuresource/:pressureSourceType",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@10.6.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/print",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@10.6.0",
+    "webdriver@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/privacy",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@10.6.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/receive_async_response",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0",
+    "mjsonwp@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/refresh",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0",
+    "webdriver@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/reporting/generate_test_report",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@10.6.0",
+    "webdriver@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/rotation",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/se/file",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "selenium-grid@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/se/files",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "selenium-grid@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/se/log",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0",
+    "chromium@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/secure-payment-confirmation/set-mode",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@10.6.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/sensor",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@10.6.0",
+    "webdriver@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/sensor/:type",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "webdriver@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/sensors/:sensorType",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@10.6.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/session_storage",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/shadow/:shadowId/element",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@10.6.0",
+    "base-driver@9.9.0",
+    "webdriver@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/shadow/:shadowId/elements",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@10.6.0",
+    "base-driver@9.9.0",
+    "webdriver@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/storageaccess",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@10.6.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/time_zone",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "webdriver@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/timeouts",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0",
+    "webdriver@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/timeouts/async_script",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/timeouts/implicit_wait",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/touch/click",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/touch/doubleclick",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/touch/down",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/touch/flick",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/touch/longclick",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/touch/move",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/touch/multi/perform",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/touch/perform",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/touch/pinch",
+   "verdict": "absent",
+   "http": 404,
+   "error": "unknown command",
+   "claimed_by": [
+    "chromium@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/touch/scroll",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/touch/up",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/url",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0",
+    "webdriver@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/webauthn/authenticator",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0",
+    "webdriver@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/webauthn/authenticator/:authenticatorId/credential",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0",
+    "webdriver@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/webauthn/authenticator/:authenticatorId/uv",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0",
+    "webdriver@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/window",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0",
+    "webdriver@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/window/:windowhandle/maximize",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/window/:windowhandle/position",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@9.9.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/window/:windowhandle/size",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/window/fullscreen",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0",
+    "webdriver@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/window/maximize",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0",
+    "webdriver@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/window/minimize",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0",
+    "webdriver@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/window/new",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@10.6.0",
+    "base-driver@9.9.0",
+    "webdriver@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/window/rect",
+   "verdict": "exists",
+   "http": 404,
+   "error": "invalid session id",
+   "claimed_by": [
+    "base-driver@1.x",
+    "base-driver@10.6.0",
+    "base-driver@9.9.0",
+    "webdriver@wdio-protocols-9.28.0"
+   ]
+  },
+  {
+   "method": "POST",
+   "path": "/shutdown",
+   "verdict": "exists",
+   "http": 200,
+   "error": "",
+   "claimed_by": [
+    "chromium@wdio-protocols-9.28.0"
+   ]
+  }
+ ]
+}

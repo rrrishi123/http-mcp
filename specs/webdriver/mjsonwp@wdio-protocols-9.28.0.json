@@ -1,0 +1,32 @@
+{
+ "source": "npm:@wdio/protocols/mjsonwp",
+ "version": "9.28.0",
+ "fetched": "2026-06-11",
+ "count": 6,
+ "routes": [
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/element/:elementId/pageIndex"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/network_connection"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/touch/multi/perform"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/touch/perform"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/network_connection"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/receive_async_response"
+  }
+ ]
+}

@@ -1,0 +1,820 @@
+{
+ "source": "npm:@appium/base-driver",
+ "version": "9.9.0",
+ "fetched": "2026-06-11",
+ "count": 203,
+ "routes": [
+  {
+   "method": "DELETE",
+   "path": "/session/:sessionId"
+  },
+  {
+   "method": "DELETE",
+   "path": "/session/:sessionId/actions"
+  },
+  {
+   "method": "DELETE",
+   "path": "/session/:sessionId/cookie"
+  },
+  {
+   "method": "DELETE",
+   "path": "/session/:sessionId/cookie/:name"
+  },
+  {
+   "method": "DELETE",
+   "path": "/session/:sessionId/local_storage"
+  },
+  {
+   "method": "DELETE",
+   "path": "/session/:sessionId/local_storage/key/:key"
+  },
+  {
+   "method": "DELETE",
+   "path": "/session/:sessionId/session_storage"
+  },
+  {
+   "method": "DELETE",
+   "path": "/session/:sessionId/session_storage/key/:key"
+  },
+  {
+   "method": "DELETE",
+   "path": "/session/:sessionId/webauthn/authenticator/:authenticatorId"
+  },
+  {
+   "method": "DELETE",
+   "path": "/session/:sessionId/webauthn/authenticator/:authenticatorId/credentials"
+  },
+  {
+   "method": "DELETE",
+   "path": "/session/:sessionId/webauthn/authenticator/:authenticatorId/credentials/:credentialId"
+  },
+  {
+   "method": "DELETE",
+   "path": "/session/:sessionId/window"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/alert/text"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/alert_text"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/appium/device/app_state"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/appium/device/current_activity"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/appium/device/current_package"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/appium/device/display_density"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/appium/device/is_keyboard_shown"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/appium/device/system_bars"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/appium/device/system_time"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/appium/settings"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/application_cache/status"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/context"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/contexts"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/cookie"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/cookie/:name"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/element/:elementId"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/element/:elementId/attribute/:name"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/element/:elementId/css/:propertyName"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/element/:elementId/displayed"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/element/:elementId/enabled"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/element/:elementId/equals/:otherId"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/element/:elementId/location"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/element/:elementId/location_in_view"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/element/:elementId/name"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/element/:elementId/pageIndex"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/element/:elementId/property/:name"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/element/:elementId/rect"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/element/:elementId/screenshot"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/element/:elementId/selected"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/element/:elementId/shadow"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/element/:elementId/size"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/element/:elementId/text"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/element/active"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/ime/activated"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/ime/active_engine"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/ime/available_engines"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/local_storage"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/local_storage/key/:key"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/local_storage/size"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/location"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/log/types"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/network_connection"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/orientation"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/rotation"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/screenshot"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/screenshot/:elementId"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/se/log/types"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/session_storage"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/session_storage/key/:key"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/session_storage/size"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/source"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/timeouts"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/title"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/url"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/webauthn/authenticator/:authenticatorId/credentials"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/window"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/window/:windowhandle/position"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/window/:windowhandle/size"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/window/handle"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/window/handles"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/window/rect"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/window_handle"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/window_handles"
+  },
+  {
+   "method": "GET",
+   "path": "/sessions"
+  },
+  {
+   "method": "GET",
+   "path": "/status"
+  },
+  {
+   "method": "POST",
+   "path": "/session"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/:vendor/cdp/execute"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/accept_alert"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/actions"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/alert/accept"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/alert/dismiss"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/alert/text"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/alert_text"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/app/background"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/app/close"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/app/end_test_coverage"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/app/launch"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/app/reset"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/app/strings"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/device/activate_app"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/device/app_installed"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/device/app_state"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/device/finger_print"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/device/get_clipboard"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/device/gsm_call"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/device/gsm_signal"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/device/gsm_voice"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/device/hide_keyboard"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/device/install_app"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/device/is_locked"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/device/keyevent"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/device/lock"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/device/long_press_keycode"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/device/network_speed"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/device/open_notifications"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/device/power_ac"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/device/power_capacity"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/device/press_keycode"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/device/pull_file"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/device/pull_folder"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/device/push_file"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/device/remove_app"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/device/send_sms"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/device/set_clipboard"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/device/shake"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/device/start_activity"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/device/system_time"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/device/terminate_app"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/device/toggle_airplane_mode"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/device/toggle_data"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/device/toggle_location_services"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/device/toggle_wifi"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/device/unlock"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/element/:elementId/replace_value"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/element/:elementId/value"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/events"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/getPerformanceData"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/log_event"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/performanceData/types"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/receive_async_response"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/settings"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/simulator/toggle_touch_id_enrollment"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/simulator/touch_id"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/start_recording_screen"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/appium/stop_recording_screen"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/back"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/buttondown"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/buttonup"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/click"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/context"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/cookie"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/dismiss_alert"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/doubleclick"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/element"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/element/:elementId/clear"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/element/:elementId/click"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/element/:elementId/element"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/element/:elementId/elements"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/element/:elementId/submit"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/element/:elementId/value"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/element/active"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/elements"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/execute"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/execute/async"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/execute/sync"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/execute_async"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/forward"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/frame"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/frame/parent"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/ime/activate"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/ime/deactivate"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/keys"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/local_storage"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/location"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/log"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/moveto"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/network_connection"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/orientation"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/receive_async_response"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/refresh"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/rotation"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/se/log"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/session_storage"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/shadow/:shadowId/element"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/shadow/:shadowId/elements"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/timeouts"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/timeouts/async_script"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/timeouts/implicit_wait"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/touch/click"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/touch/doubleclick"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/touch/down"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/touch/flick"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/touch/longclick"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/touch/move"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/touch/multi/perform"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/touch/perform"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/touch/scroll"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/touch/up"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/url"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/webauthn/authenticator"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/webauthn/authenticator/:authenticatorId/credential"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/webauthn/authenticator/:authenticatorId/uv"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/window"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/window/:windowhandle/maximize"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/window/:windowhandle/position"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/window/fullscreen"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/window/maximize"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/window/minimize"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/window/new"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/window/rect"
+  }
+ ]
+}
