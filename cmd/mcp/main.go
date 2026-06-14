@@ -3,9 +3,10 @@
 // Transport is stdio, newline-delimited JSON-RPC 2.0 — implemented in stdlib,
 // no SDK. stdout is the protocol channel; all logging goes to stderr.
 //
-// Tool surface is small on purpose: the http_request primitive plus session
-// lifecycle. The territory is reached by aiming the primitive at a URL, not by
-// exposing one tool per endpoint.
+// Tool surface:
+//   - http_request: the four-field primitive.
+//   - discover: re-perceive what a hub actually serves, correcting the stored
+//     prior (specs/) against the live wire.
 package main
 
 import (
@@ -16,11 +17,9 @@ import (
 	"net/http"
 	"os"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/rrrishi123/http-mcp/internal/httpx"
-	"github.com/rrrishi123/http-mcp/internal/session"
 )
 
 const protocolVersion = "2024-11-05"
@@ -46,7 +45,6 @@ type rpcResp struct {
 
 type server struct {
 	out    *bufio.Writer
-	store  *session.Store
 	client *http.Client
 }
 
@@ -69,7 +67,6 @@ func (s *server) fail(id json.RawMessage, code int, msg string) {
 	s.send(rpcResp{ID: id, Error: &rpcErr{Code: code, Message: msg}})
 }
 
-// toolText wraps a value as a single text content block (the MCP tools/call shape).
 func toolText(v any) map[string]any {
 	var text string
 	switch t := v.(type) {
@@ -108,75 +105,204 @@ func (s *server) tools() []any {
 			},
 		},
 		map[string]any{
-			"name":        "create_session",
-			"description": "POST a new-session payload to a hub and track it. kind=local (watched for death) or cloud (kept warm before idle timeout). Returns the session id.",
+			"name": "discover",
+			"description": "Re-perceive what a hub actually serves. Fires the wire's own self-description: " +
+				"GET /status, then (if a session_id is given) GET /session/:id to read live caps, " +
+				"GET /session/:id/appium/commands for Appium self-enumeration, and a 404-vs-405 probe " +
+				"of every route in the stored prior (specs/) to classify exists/absent/unknown. " +
+				"Returns what the wire says, not what the spec claims. Probe verdict beats snapshot claim, always.",
 			"inputSchema": map[string]any{
 				"type": "object",
 				"properties": map[string]any{
-					"hub_url":      str("Base hub URL, e.g. http://localhost:4444"),
-					"kind":         str("local | cloud (default local)"),
-					"capabilities": map[string]any{"type": "object", "description": "W3C capabilities object posted as {capabilities:{alwaysMatch:...}}."},
-					"body":         str("Raw new-session body (overrides capabilities if given)."),
+					"hub_url":    str("Base hub URL, e.g. http://localhost:4444"),
+					"session_id": str("Optional live session id — enables cap-read and Appium self-enumeration."),
+					"spec":       str("Spec name to probe against, e.g. geckodriver@0.37.0 or webdriver@wdio-9.28.0. Omit to probe all known specs."),
 				},
 				"required": []any{"hub_url"},
 			},
 		},
-		map[string]any{
-			"name":        "list_sessions",
-			"description": "List every tracked session with its kind, age, and live status.",
-			"inputSchema": map[string]any{"type": "object", "properties": map[string]any{}},
-		},
-		map[string]any{
-			"name":        "delete_session",
-			"description": "Stop tracking a session. With end_remote=true, also DELETE it on the hub.",
-			"inputSchema": map[string]any{
-				"type": "object",
-				"properties": map[string]any{
-					"id":         str("Session id."),
-					"end_remote": map[string]any{"type": "boolean", "description": "Also send DELETE /session/{id} to the hub."},
-				},
-				"required": []any{"id"},
-			},
-		},
-		map[string]any{
-			"name":        "broadcast",
-			"description": "Fan out one request to every tracked session concurrently. :id in path is replaced with each session's id. Returns one result per session.",
-			"inputSchema": map[string]any{
-				"type": "object",
-				"properties": map[string]any{
-					"method":      str("HTTP method (GET, POST, ...)."),
-					"path":        str("Path template — :id is replaced with each session id. E.g. /session/:id/screenshot"),
-					"body":        str("Request body, same for all sessions."),
-					"session_ids": map[string]any{"type": "array", "items": map[string]any{"type": "string"}, "description": "Subset of session ids to target. Empty = all tracked sessions."},
-				},
-				"required": []any{"method", "path"},
-			},
-		},
-		map[string]any{
-			"name":        "create_fleet",
-			"description": "Start multiple sessions concurrently — one goroutine per hub. Returns a result for each entry.",
-			"inputSchema": map[string]any{
-				"type": "object",
-				"properties": map[string]any{
-					"sessions": map[string]any{
-						"type":        "array",
-						"description": "One entry per session to create.",
-						"items": map[string]any{
-							"type": "object",
-							"properties": map[string]any{
-								"hub_url":      str("Base hub URL, e.g. http://localhost:4723"),
-								"kind":         str("local | cloud (default local)"),
-								"capabilities": map[string]any{"type": "object", "description": "W3C capabilities object."},
-								"body":         str("Raw new-session body (overrides capabilities)."),
-							},
-							"required": []any{"hub_url"},
-						},
-					},
-				},
-				"required": []any{"sessions"},
-			},
-		},
 	}
+}
+
+// discover fires the wire's self-description against hub_url and returns
+// what the wire actually says. It is the re-perceiver: prior (specs/) is the
+// hypothesis; the live wire is the verdict.
+func (s *server) discover(args map[string]any) any {
+	hub := str(args["hub_url"])
+	if hub == "" {
+		return toolErr("hub_url is required")
+	}
+	hub = strings.TrimRight(hub, "/")
+
+	out := map[string]any{"hub_url": hub}
+
+	// Layer 1: status
+	resp, err := httpx.Do(s.client, httpx.Request{Method: "GET", URL: hub + "/status"})
+	if err != nil {
+		out["status"] = map[string]any{"error": err.Error()}
+	} else {
+		var statusBody map[string]any
+		json.Unmarshal([]byte(resp.Body), &statusBody)
+		out["status"] = map[string]any{"http": resp.Status, "body": statusBody}
+	}
+
+	sid := str(args["session_id"])
+	if sid == "" {
+		out["note"] = "pass session_id to enable cap-read and Appium self-enumeration"
+		return toolText(out)
+	}
+
+	// Layer 2: live caps (what the server actually granted)
+	resp, err = httpx.Do(s.client, httpx.Request{Method: "GET", URL: hub + "/session/" + sid})
+	if err != nil {
+		out["caps"] = map[string]any{"error": err.Error()}
+	} else {
+		var capsBody map[string]any
+		json.Unmarshal([]byte(resp.Body), &capsBody)
+		out["caps"] = map[string]any{"http": resp.Status, "body": capsBody}
+	}
+
+	// Layer 3: Appium self-enumeration (only if server speaks it)
+	appiumRoutes := map[string]any{}
+	for _, path := range []string{"/appium/commands", "/appium/extensions", "/appium/capabilities"} {
+		r, err := httpx.Do(s.client, httpx.Request{Method: "GET", URL: hub + "/session/" + sid + path})
+		if err == nil && r.Status == 200 {
+			var body map[string]any
+			json.Unmarshal([]byte(r.Body), &body)
+			appiumRoutes[path] = body
+		}
+	}
+	if len(appiumRoutes) > 0 {
+		out["appium_self_enumeration"] = appiumRoutes
+	}
+
+	// Layer 4: 404-vs-405 bogus-session probe against stored specs
+	specsDir := "/Users/rishirajs/Desktop/repos/http-mcp/specs"
+	specFilter := str(args["spec"])
+	probeResults := probeSpecs(s.client, hub, specsDir, specFilter)
+	if probeResults != nil {
+		out["probe"] = probeResults
+	}
+
+	return toolText(out)
+}
+
+type route struct {
+	Method string `json:"method"`
+	Path   string `json:"path"`
+}
+
+type specFile struct {
+	Source  string  `json:"source"`
+	Version string  `json:"version"`
+	Routes  []route `json:"routes"`
+}
+
+// probeSpecs fires every route from the stored specs at hub with a bogus session id.
+// 404/plain-text → absent; W3C JSON error body → exists (any error except unknown_command
+// at the router level means the route matched a handler).
+func probeSpecs(client *http.Client, hub, specsDir, filter string) map[string]any {
+	bogus := "00000000-0000-0000-0000-000000000000"
+
+	// Collect all spec files
+	type specEntry struct {
+		name string
+		file specFile
+	}
+	var specs []specEntry
+
+	for _, sub := range []string{"webdriver", "appium"} {
+		dir := specsDir + "/" + sub
+		entries, err := os.ReadDir(dir)
+		if err != nil {
+			continue
+		}
+		for _, e := range entries {
+			if !strings.HasSuffix(e.Name(), ".json") {
+				continue
+			}
+			name := strings.TrimSuffix(e.Name(), ".json")
+			if filter != "" && !strings.Contains(name, filter) {
+				continue
+			}
+			// skip probe results (they live in specs/probes/)
+			b, err := os.ReadFile(dir + "/" + e.Name())
+			if err != nil {
+				continue
+			}
+			var sf specFile
+			if err := json.Unmarshal(b, &sf); err != nil {
+				continue
+			}
+			specs = append(specs, specEntry{name: sub + "/" + name, file: sf})
+		}
+	}
+
+	if len(specs) == 0 {
+		return nil
+	}
+
+	// Deduplicate routes across all selected specs
+	seen := map[string]bool{}
+	type routeKey struct{ method, path string }
+	var routes []routeKey
+	for _, sp := range specs {
+		for _, r := range sp.file.Routes {
+			k := r.Method + " " + r.Path
+			if !seen[k] {
+				seen[k] = true
+				routes = append(routes, routeKey{r.Method, r.Path})
+			}
+		}
+	}
+
+	exists, absent, errored := 0, 0, 0
+	sample := []map[string]any{}
+
+	for _, r := range routes {
+		path := strings.ReplaceAll(r.path, ":sessionId", bogus)
+		path = strings.ReplaceAll(path, ":id", bogus)
+		parts := strings.Split(path, "/")
+		for i, p := range parts {
+			if strings.HasPrefix(p, ":") {
+				parts[i] = "bogus"
+			}
+		}
+		path = strings.Join(parts, "/")
+
+		resp, err := httpx.Do(client, httpx.Request{Method: r.method, URL: hub + path})
+		if err != nil {
+			errored++
+			continue
+		}
+		// Discriminator: W3C JSON error → route matched a handler → EXISTS
+		// plain-text 404/405 → router never matched → ABSENT
+		ct := strings.Join(resp.Headers["Content-Type"], "")
+		if strings.Contains(ct, "json") {
+			exists++
+			if len(sample) < 5 {
+				sample = append(sample, map[string]any{"route": r.method + " " + r.path, "verdict": "exists", "status": resp.Status})
+			}
+		} else {
+			absent++
+		}
+	}
+
+	return map[string]any{
+		"probed":  len(routes),
+		"exists":  exists,
+		"absent":  absent,
+		"errored": errored,
+		"sample":  sample,
+		"note":    "probe verdict beats snapshot claim. exists=route matched a handler; absent=router never matched.",
+	}
+}
+
+func str(v any) string {
+	if s, ok := v.(string); ok {
+		return s
+	}
+	return ""
 }
 
 func (s *server) callTool(name string, args map[string]any) (any, bool) {
@@ -202,182 +328,10 @@ func (s *server) callTool(name string, args map[string]any) (any, bool) {
 		}
 		return toolText(resp), false
 
-	case "create_session":
-		hub := str(args["hub_url"])
-		kind := session.Local
-		if str(args["kind"]) == "cloud" {
-			kind = session.Cloud
-		}
-		body := str(args["body"])
-		if body == "" {
-			caps, _ := args["capabilities"].(map[string]any)
-			b, _ := json.Marshal(map[string]any{"capabilities": map[string]any{"alwaysMatch": caps, "firstMatch": []any{map[string]any{}}}})
-			body = string(b)
-		}
-		resp, err := httpx.Do(s.client, httpx.Request{Method: "POST", URL: hub + "/session", Body: body})
-		if err != nil {
-			return toolErr("create_session failed: " + err.Error()), false
-		}
-		var env struct {
-			Value struct {
-				SessionID    string         `json:"sessionId"`
-				Capabilities map[string]any `json:"capabilities"`
-			} `json:"value"`
-		}
-		json.Unmarshal([]byte(resp.Body), &env)
-		if env.Value.SessionID == "" {
-			return toolErr("no sessionId in response: " + resp.Body), false
-		}
-		sess := &session.Session{ID: env.Value.SessionID, HubURL: hub, Kind: kind, Caps: env.Value.Capabilities}
-		s.store.Add(sess)
-		return toolText(map[string]any{"session_id": sess.ID, "kind": string(kind), "hub_url": hub}), false
-
-	case "list_sessions":
-		return toolText(s.store.List()), false
-
-	case "delete_session":
-		id := str(args["id"])
-		sess, ok := s.store.Get(id)
-		if end, _ := args["end_remote"].(bool); end && ok {
-			httpx.Do(s.client, httpx.Request{Method: "DELETE", URL: sess.HubURL + "/session/" + id})
-		}
-		if s.store.Delete(id) {
-			return toolText(map[string]any{"deleted": id}), false
-		}
-		return toolErr("unknown session: " + id), false
-
-	case "broadcast":
-		method := str(args["method"])
-		path := str(args["path"])
-		body := str(args["body"])
-
-		var targetIDs map[string]bool
-		if ids, ok := args["session_ids"].([]any); ok && len(ids) > 0 {
-			targetIDs = make(map[string]bool, len(ids))
-			for _, v := range ids {
-				targetIDs[str(v)] = true
-			}
-		}
-
-		sessions := s.store.List()
-		if targetIDs != nil {
-			var filtered []session.Session
-			for _, sess := range sessions {
-				if targetIDs[sess.ID] {
-					filtered = append(filtered, sess)
-				}
-			}
-			sessions = filtered
-		}
-		if len(sessions) == 0 {
-			return toolText([]any{}), false
-		}
-
-		type bResult struct {
-			SessionID string `json:"session_id"`
-			HubURL    string `json:"hub_url"`
-			Status    int    `json:"status,omitempty"`
-			Body      string `json:"body,omitempty"`
-			Error     string `json:"error,omitempty"`
-		}
-		results := make([]bResult, len(sessions))
-		var wg sync.WaitGroup
-		for i, sess := range sessions {
-			wg.Add(1)
-			go func(i int, sess session.Session) {
-				defer wg.Done()
-				url := sess.HubURL + strings.ReplaceAll(path, ":id", sess.ID)
-				resp, err := httpx.Do(s.client, httpx.Request{Method: method, URL: url, Body: body})
-				if err != nil {
-					results[i] = bResult{SessionID: sess.ID, HubURL: sess.HubURL, Error: err.Error()}
-					return
-				}
-				results[i] = bResult{SessionID: sess.ID, HubURL: sess.HubURL, Status: resp.Status, Body: resp.Body}
-			}(i, sess)
-		}
-		wg.Wait()
-		return toolText(results), false
-
-	case "create_fleet":
-		type entry struct {
-			HubURL string         `json:"hub_url"`
-			Kind   string         `json:"kind"`
-			Caps   map[string]any `json:"capabilities"`
-			Body   string         `json:"body"`
-		}
-		type fResult struct {
-			SessionID string `json:"session_id,omitempty"`
-			HubURL    string `json:"hub_url"`
-			Kind      string `json:"kind"`
-			Error     string `json:"error,omitempty"`
-		}
-
-		rawSessions, _ := args["sessions"].([]any)
-		if len(rawSessions) == 0 {
-			return toolErr("sessions must be a non-empty array"), false
-		}
-		entries := make([]entry, len(rawSessions))
-		for i, v := range rawSessions {
-			m, _ := v.(map[string]any)
-			entries[i] = entry{
-				HubURL: str(m["hub_url"]),
-				Kind:   str(m["kind"]),
-				Body:   str(m["body"]),
-			}
-			if caps, ok := m["capabilities"].(map[string]any); ok {
-				entries[i].Caps = caps
-			}
-		}
-
-		results := make([]fResult, len(entries))
-		var wg sync.WaitGroup
-		for i, e := range entries {
-			wg.Add(1)
-			go func(i int, e entry) {
-				defer wg.Done()
-				kind := session.Local
-				if e.Kind == "cloud" {
-					kind = session.Cloud
-				}
-				body := e.Body
-				if body == "" {
-					b, _ := json.Marshal(map[string]any{"capabilities": map[string]any{
-						"alwaysMatch": e.Caps,
-						"firstMatch":  []any{map[string]any{}},
-					}})
-					body = string(b)
-				}
-				resp, err := httpx.Do(s.client, httpx.Request{Method: "POST", URL: e.HubURL + "/session", Body: body})
-				if err != nil {
-					results[i] = fResult{HubURL: e.HubURL, Kind: string(kind), Error: err.Error()}
-					return
-				}
-				var env struct {
-					Value struct {
-						SessionID string `json:"sessionId"`
-					} `json:"value"`
-				}
-				json.Unmarshal([]byte(resp.Body), &env)
-				if env.Value.SessionID == "" {
-					results[i] = fResult{HubURL: e.HubURL, Kind: string(kind), Error: "no sessionId: " + resp.Body[:min(len(resp.Body), 120)]}
-					return
-				}
-				sess := &session.Session{ID: env.Value.SessionID, HubURL: e.HubURL, Kind: kind}
-				s.store.Add(sess)
-				results[i] = fResult{SessionID: sess.ID, HubURL: e.HubURL, Kind: string(kind)}
-			}(i, e)
-		}
-		wg.Wait()
-		return toolText(results), false
+	case "discover":
+		return s.discover(args), false
 	}
 	return toolErr("unknown tool: " + name), false
-}
-
-func str(v any) string {
-	if s, ok := v.(string); ok {
-		return s
-	}
-	return ""
 }
 
 func (s *server) handle(req rpcReq) {
@@ -386,10 +340,9 @@ func (s *server) handle(req rpcReq) {
 		s.ok(req.ID, map[string]any{
 			"protocolVersion": protocolVersion,
 			"capabilities":    map[string]any{"tools": map[string]any{}},
-			"serverInfo":      map[string]any{"name": "http-mcp", "version": "0.1.0"},
+			"serverInfo":      map[string]any{"name": "http-mcp", "version": "0.2.0"},
 		})
 	case "notifications/initialized":
-		// notification, no response
 	case "ping":
 		s.ok(req.ID, map[string]any{})
 	case "tools/list":
@@ -413,11 +366,8 @@ func (s *server) handle(req rpcReq) {
 }
 
 func main() {
-	store := session.New()
-	store.OnDeath = func(id, reason string) { logf("reaped %s (%s)", id, reason) }
 	s := &server{
 		out:    bufio.NewWriter(os.Stdout),
-		store:  store,
 		client: &http.Client{Timeout: 120 * time.Second},
 	}
 	logf("started; stdio MCP; %d tools", len(s.tools()))
