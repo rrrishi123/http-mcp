@@ -146,9 +146,18 @@ func (s *server) discover(args map[string]any) any {
 		out["status"] = map[string]any{"http": resp.Status, "body": statusBody}
 	}
 
+	// Layer 4: 404-vs-405 bogus-session probe against stored specs.
+	// Uses a fake UUID — does NOT need a real session, always runs.
+	specsDir := "/Users/rishirajs/Desktop/repos/http-mcp/specs"
+	specFilter := str(args["spec"])
+	probeResults := probeSpecs(s.client, hub, specsDir, specFilter)
+	if probeResults != nil {
+		out["probe"] = probeResults
+	}
+
 	sid := str(args["session_id"])
 	if sid == "" {
-		out["note"] = "pass session_id to enable cap-read and Appium self-enumeration"
+		out["note"] = "pass session_id to enable live cap-read and Appium self-enumeration"
 		return toolText(out)
 	}
 
@@ -174,14 +183,6 @@ func (s *server) discover(args map[string]any) any {
 	}
 	if len(appiumRoutes) > 0 {
 		out["appium_self_enumeration"] = appiumRoutes
-	}
-
-	// Layer 4: 404-vs-405 bogus-session probe against stored specs
-	specsDir := "/Users/rishirajs/Desktop/repos/http-mcp/specs"
-	specFilter := str(args["spec"])
-	probeResults := probeSpecs(s.client, hub, specsDir, specFilter)
-	if probeResults != nil {
-		out["probe"] = probeResults
 	}
 
 	return toolText(out)
