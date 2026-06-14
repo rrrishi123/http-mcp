@@ -15,6 +15,8 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strings"
+	"sync"
 	"time"
 
 	"github.com/rrrishi123/http-mcp/internal/httpx"
@@ -136,6 +138,44 @@ func (s *server) tools() []any {
 				"required": []any{"id"},
 			},
 		},
+		map[string]any{
+			"name":        "broadcast",
+			"description": "Fan out one request to every tracked session concurrently. :id in path is replaced with each session's id. Returns one result per session.",
+			"inputSchema": map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"method":      str("HTTP method (GET, POST, ...)."),
+					"path":        str("Path template — :id is replaced with each session id. E.g. /session/:id/screenshot"),
+					"body":        str("Request body, same for all sessions."),
+					"session_ids": map[string]any{"type": "array", "items": map[string]any{"type": "string"}, "description": "Subset of session ids to target. Empty = all tracked sessions."},
+				},
+				"required": []any{"method", "path"},
+			},
+		},
+		map[string]any{
+			"name":        "create_fleet",
+			"description": "Start multiple sessions concurrently — one goroutine per hub. Returns a result for each entry.",
+			"inputSchema": map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"sessions": map[string]any{
+						"type":        "array",
+						"description": "One entry per session to create.",
+						"items": map[string]any{
+							"type": "object",
+							"properties": map[string]any{
+								"hub_url":      str("Base hub URL, e.g. http://localhost:4723"),
+								"kind":         str("local | cloud (default local)"),
+								"capabilities": map[string]any{"type": "object", "description": "W3C capabilities object."},
+								"body":         str("Raw new-session body (overrides capabilities)."),
+							},
+							"required": []any{"hub_url"},
+						},
+					},
+				},
+				"required": []any{"sessions"},
+			},
+		},
 	}
 }
 
@@ -205,6 +245,130 @@ func (s *server) callTool(name string, args map[string]any) (any, bool) {
 			return toolText(map[string]any{"deleted": id}), false
 		}
 		return toolErr("unknown session: " + id), false
+
+	case "broadcast":
+		method := str(args["method"])
+		path := str(args["path"])
+		body := str(args["body"])
+
+		var targetIDs map[string]bool
+		if ids, ok := args["session_ids"].([]any); ok && len(ids) > 0 {
+			targetIDs = make(map[string]bool, len(ids))
+			for _, v := range ids {
+				targetIDs[str(v)] = true
+			}
+		}
+
+		sessions := s.store.List()
+		if targetIDs != nil {
+			var filtered []session.Session
+			for _, sess := range sessions {
+				if targetIDs[sess.ID] {
+					filtered = append(filtered, sess)
+				}
+			}
+			sessions = filtered
+		}
+		if len(sessions) == 0 {
+			return toolText([]any{}), false
+		}
+
+		type bResult struct {
+			SessionID string `json:"session_id"`
+			HubURL    string `json:"hub_url"`
+			Status    int    `json:"status,omitempty"`
+			Body      string `json:"body,omitempty"`
+			Error     string `json:"error,omitempty"`
+		}
+		results := make([]bResult, len(sessions))
+		var wg sync.WaitGroup
+		for i, sess := range sessions {
+			wg.Add(1)
+			go func(i int, sess session.Session) {
+				defer wg.Done()
+				url := sess.HubURL + strings.ReplaceAll(path, ":id", sess.ID)
+				resp, err := httpx.Do(s.client, httpx.Request{Method: method, URL: url, Body: body})
+				if err != nil {
+					results[i] = bResult{SessionID: sess.ID, HubURL: sess.HubURL, Error: err.Error()}
+					return
+				}
+				results[i] = bResult{SessionID: sess.ID, HubURL: sess.HubURL, Status: resp.Status, Body: resp.Body}
+			}(i, sess)
+		}
+		wg.Wait()
+		return toolText(results), false
+
+	case "create_fleet":
+		type entry struct {
+			HubURL string         `json:"hub_url"`
+			Kind   string         `json:"kind"`
+			Caps   map[string]any `json:"capabilities"`
+			Body   string         `json:"body"`
+		}
+		type fResult struct {
+			SessionID string `json:"session_id,omitempty"`
+			HubURL    string `json:"hub_url"`
+			Kind      string `json:"kind"`
+			Error     string `json:"error,omitempty"`
+		}
+
+		rawSessions, _ := args["sessions"].([]any)
+		if len(rawSessions) == 0 {
+			return toolErr("sessions must be a non-empty array"), false
+		}
+		entries := make([]entry, len(rawSessions))
+		for i, v := range rawSessions {
+			m, _ := v.(map[string]any)
+			entries[i] = entry{
+				HubURL: str(m["hub_url"]),
+				Kind:   str(m["kind"]),
+				Body:   str(m["body"]),
+			}
+			if caps, ok := m["capabilities"].(map[string]any); ok {
+				entries[i].Caps = caps
+			}
+		}
+
+		results := make([]fResult, len(entries))
+		var wg sync.WaitGroup
+		for i, e := range entries {
+			wg.Add(1)
+			go func(i int, e entry) {
+				defer wg.Done()
+				kind := session.Local
+				if e.Kind == "cloud" {
+					kind = session.Cloud
+				}
+				body := e.Body
+				if body == "" {
+					b, _ := json.Marshal(map[string]any{"capabilities": map[string]any{
+						"alwaysMatch": e.Caps,
+						"firstMatch":  []any{map[string]any{}},
+					}})
+					body = string(b)
+				}
+				resp, err := httpx.Do(s.client, httpx.Request{Method: "POST", URL: e.HubURL + "/session", Body: body})
+				if err != nil {
+					results[i] = fResult{HubURL: e.HubURL, Kind: string(kind), Error: err.Error()}
+					return
+				}
+				var env struct {
+					Value struct {
+						SessionID string `json:"sessionId"`
+					} `json:"value"`
+				}
+				json.Unmarshal([]byte(resp.Body), &env)
+				if env.Value.SessionID == "" {
+					results[i] = fResult{HubURL: e.HubURL, Kind: string(kind), Error: "no sessionId: " + resp.Body[:min(len(resp.Body), 120)]}
+					return
+				}
+				sess := &session.Session{ID: env.Value.SessionID, HubURL: e.HubURL, Kind: kind}
+				s.store.Add(sess)
+				results[i] = fResult{SessionID: sess.ID, HubURL: e.HubURL, Kind: string(kind)}
+			}(i, e)
+		}
+		wg.Wait()
+		return toolText(results), false
 	}
 	return toolErr("unknown tool: " + name), false
 }
