@@ -2,3 +2,5 @@
 *.env
 auth/*.json
 TERRITORY.md
+.bin/
+http-mcp
