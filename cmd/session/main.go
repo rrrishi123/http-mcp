@@ -163,13 +163,23 @@ func main() {
 	fmt.Printf("   handle: %s  (threads through every call below)\n", sid)
 
 	if *mjpeg > 0 {
+		// The mjpegServerPort cap makes UiAutomator2 serve the stream on the
+		// DEVICE at that port; the inspector (on the host) reaches it only via
+		// an adb forward. Set it up so the inspector's http://localhost:<port>
+		// stream URL is actually live — otherwise it points at a dead port.
+		fwd := exec.Command("adb", "-s", *udid, "forward",
+			fmt.Sprintf("tcp:%d", *mjpeg), fmt.Sprintf("tcp:%d", *mjpeg))
+		if out, err := fwd.CombinedOutput(); err != nil {
+			fmt.Printf("   mjpeg: adb forward failed: %v %s\n", err, out)
+		} else {
+			fmt.Printf("   mjpeg: adb forward tcp:%d tcp:%d\n", *mjpeg, *mjpeg)
+		}
 		if conn, err := net.DialTimeout("tcp",
 			fmt.Sprintf("localhost:%d", *mjpeg), 2*time.Second); err == nil {
 			conn.Close()
 			fmt.Printf("   mjpeg: live stream up at http://localhost:%d\n", *mjpeg)
 		} else {
-			fmt.Printf("   mjpeg: not reachable — try: adb forward tcp:%d tcp:%d\n",
-				*mjpeg, *mjpeg)
+			fmt.Printf("   mjpeg: forwarded but not reachable on host:%d (%v)\n", *mjpeg, err)
 		}
 	}
 

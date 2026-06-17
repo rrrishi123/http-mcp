@@ -19,6 +19,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rrrishi123/http-mcp/auth"
 	"github.com/rrrishi123/http-mcp/internal/httpx"
 )
 
@@ -99,7 +100,7 @@ func (s *server) tools() []any {
 					"url":     str("Full URL to call."),
 					"headers": map[string]any{"type": "object", "description": "Header name -> value.", "additionalProperties": map[string]any{"type": "string"}},
 					"body":    str("Request body (raw string; JSON by default)."),
-					"auth":    map[string]any{"type": "object", "description": "Optional auth: {type: basic|bearer|apikey, user, key, header}."},
+					"auth":    map[string]any{"type": "object", "description": "Optional auth. Either {profile: \"prod:adminltqa\"} to resolve a Basic credential from the environment (LT_USERNAME/LT_ACCESS_KEY) or a gitignored auth/<profile>.json — the secret never passes through here — or a literal {type: basic|bearer|apikey, user, key, header}."},
 				},
 				"required": []any{"method", "url"},
 			},
@@ -321,7 +322,18 @@ func (s *server) callTool(name string, args map[string]any) (any, bool) {
 			}
 		}
 		if a, ok := args["auth"].(map[string]any); ok {
-			(httpx.Auth{Type: str(a["type"]), User: str(a["user"]), Key: str(a["key"]), Header: str(a["header"])}).Apply(&req)
+			// A profile name keeps the secret below the trust boundary: the
+			// agent names a credential, the wire resolves it from env/file.
+			// Literal {type,user,key} still works for ad-hoc calls.
+			if p := str(a["profile"]); p != "" {
+				resolved, err := auth.Resolve(p)
+				if err != nil {
+					return toolErr("auth: " + err.Error()), false
+				}
+				resolved.Apply(&req)
+			} else {
+				(httpx.Auth{Type: str(a["type"]), User: str(a["user"]), Key: str(a["key"]), Header: str(a["header"])}).Apply(&req)
+			}
 		}
 		resp, err := httpx.Do(s.client, req)
 		if err != nil {
