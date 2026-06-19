@@ -3,8 +3,11 @@
 // Transport is stdio, newline-delimited JSON-RPC 2.0 — implemented in stdlib,
 // no SDK. stdout is the protocol channel; all logging goes to stderr.
 //
-// Tool surface:
-//   - http_request: the four-field primitive.
+// Tool surface — atoms of two physics, never frameworks:
+//   - http_request:  the call. One request, one response (the wire beneath
+//     Selenium/Appium — WebDriver classic is W3C HTTP).
+//   - bidi_command:  the channel. One command over a CDP/BiDi WebSocket, one
+//     response (the wire beneath Playwright/Puppeteer/Selenium-BiDi).
 //   - discover: re-perceive what a hub actually serves, correcting the stored
 //     prior (specs/) against the live wire.
 package main
@@ -21,6 +24,7 @@ import (
 
 	"github.com/rrrishi123/http-mcp/auth"
 	"github.com/rrrishi123/http-mcp/internal/httpx"
+	"github.com/rrrishi123/http-mcp/internal/wsx"
 )
 
 const protocolVersion = "2024-11-05"
@@ -115,13 +119,86 @@ func (s *server) tools() []any {
 			"inputSchema": map[string]any{
 				"type": "object",
 				"properties": map[string]any{
-					"hub_url":    str("Base hub URL, e.g. http://localhost:4444"),
+					"hub_url":    str("Base URL of the WebDriver/Appium hub to re-perceive."),
 					"session_id": str("Optional live session id — enables cap-read and Appium self-enumeration."),
 					"spec":       str("Spec name to probe against, e.g. geckodriver@0.37.0 or webdriver@wdio-9.28.0. Omit to probe all known specs."),
 				},
 				"required": []any{"hub_url"},
 			},
 		},
+		map[string]any{
+			"name": "bidi_command",
+			"description": "Send one command over a CDP / WebDriver-BiDi WebSocket and return its response. " +
+				"This is the channel-physics sibling of http_request: where http_request is one HTTP call " +
+				"(the wire beneath Selenium/Appium), bidi_command is one duplex-channel command (the wire beneath " +
+				"Playwright/Puppeteer/Selenium-BiDi). A command gets a response; streaming events are not this tool's job.",
+			"inputSchema": map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"ws_url":     str("The channel endpoint: a Firefox BiDi session socket, or a Chrome CDP page/target socket."),
+					"method":     str("Command method, e.g. browsingContext.getTree (BiDi) or Page.navigate (CDP)."),
+					"params":     map[string]any{"type": "object", "description": "Command params object (defaults to {})."},
+					"id":         map[string]any{"type": "integer", "description": "Command id to match the response against (default 1)."},
+					"timeout_ms": map[string]any{"type": "integer", "description": "Give up waiting for the response after this many ms (default 30000)."},
+				},
+				"required": []any{"ws_url", "method"},
+			},
+		},
+	}
+}
+
+// bidiCommand opens the channel, produces one command, and returns the response
+// whose id matches. The connection is per-call: this is the command atom, not a
+// subscription — a persistent, fanned-out event stream is the broker's job, not
+// the wire's.
+func (s *server) bidiCommand(args map[string]any) any {
+	wsURL := str(args["ws_url"])
+	if wsURL == "" {
+		return toolErr("ws_url is required (the CDP/BiDi WebSocket endpoint)")
+	}
+	method := str(args["method"])
+	if method == "" {
+		return toolErr("method is required (e.g. browsingContext.getTree or Page.navigate)")
+	}
+	id := 1
+	if v, ok := args["id"].(float64); ok && v > 0 {
+		id = int(v)
+	}
+	timeout := 30 * time.Second
+	if ms, ok := args["timeout_ms"].(float64); ok && ms > 0 {
+		timeout = time.Duration(ms) * time.Millisecond
+	}
+	cmd := map[string]any{"id": id, "method": method, "params": map[string]any{}}
+	if p, ok := args["params"].(map[string]any); ok {
+		cmd["params"] = p
+	}
+
+	conn, err := wsx.Dial(wsURL, 10*time.Second)
+	if err != nil {
+		return toolErr("bidi dial: " + err.Error())
+	}
+	defer conn.Close()
+	conn.SetDeadline(time.Now().Add(timeout))
+
+	payload, _ := json.Marshal(cmd)
+	if err := conn.WriteText(string(payload)); err != nil {
+		return toolErr("bidi send: " + err.Error())
+	}
+	// Read frames until the response carrying our id. Events (no id, or a
+	// different id) arrive interleaved on a channel — skip them; they are the
+	// stream, and the stream belongs to the broker.
+	for {
+		frame, err := conn.ReadText()
+		if err != nil {
+			return toolErr("bidi read: " + err.Error())
+		}
+		var msg map[string]any
+		if json.Unmarshal([]byte(frame), &msg) != nil {
+			continue
+		}
+		if fid, ok := msg["id"].(float64); ok && int(fid) == id {
+			return toolText(map[string]any{"sent": cmd, "response": msg})
+		}
 	}
 }
 
@@ -343,6 +420,9 @@ func (s *server) callTool(name string, args map[string]any) (any, bool) {
 
 	case "discover":
 		return s.discover(args), false
+
+	case "bidi_command":
+		return s.bidiCommand(args), false
 	}
 	return toolErr("unknown tool: " + name), false
 }

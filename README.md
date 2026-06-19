@@ -22,6 +22,25 @@ is that one call against a different URL. A WebDriver session is
 There is no "Selenium client" or "Appium client" on the wire; there are
 sessions, against a binary, with a route table.
 
+## The channel
+
+`http_request` is one physics: a call — request, response, done. Part of the
+wire is a *different* physics: a channel — a WebSocket you produce commands into
+and consume frames from, held open. **CDP** (Chrome DevTools Protocol) and
+**WebDriver BiDi** are this shape, and Playwright, Puppeteer, and Selenium-BiDi
+are composers over it the way Selenium/Appium are composers over HTTP. So one
+more atom maps that whole family:
+
+```
+bidi_command(ws_url, method, params) -> response
+```
+
+The WebSocket client is hand-rolled in stdlib (`internal/wsx`) — no library, the
+same way `httpx` is just `net/http`. A command gets its response; the persistent,
+fanned-out event *stream* is deliberately not the wire's job — that belongs to a
+broker, and `peer_ask`-style "ask a target, await its echo" is a *host*
+composition over these atoms, never a wire primitive.
+
 ## Sessions
 
 Many sessions run at once — local drivers and cloud providers, browsers and
@@ -63,7 +82,7 @@ The probe verdict beats the snapshot claim, always.
 
 | command        | what it does                                              |
 |----------------|-----------------------------------------------------------|
-| `cmd/mcp`      | the MCP server (stdio): `http_request` + session tools    |
+| `cmd/mcp`      | the MCP server (stdio): `http_request` + `bidi_command` + `discover` |
 | `cmd/harvest`  | append route-table snapshots from upstream releases       |
 | `cmd/probe`    | verify a snapshot against a live binary, zero side effects |
 | `cmd/session`  | run one composed session end to end (reference client)    |
@@ -80,6 +99,38 @@ Register it as a stdio MCP server in your client (`.mcp.json` / Claude Code):
 ```json
 { "mcpServers": { "http-mcp": { "command": "/path/to/http-mcp" } } }
 ```
+
+## Why a wire, not a binding
+
+The Selenium and Appium clients are good software. They're how a person writes
+automation comfortably in their own language — Java, Python, Ruby, JS. None of
+this is meant to replace them or to say they did it wrong.
+
+It's just that, underneath, they're all making the same moves on the same wire:
+
+```
+  Selenium-Java   Selenium-Python   WebdriverIO (JS)   Appium-Ruby   Playwright
+        │               │                  │               │            │
+        └───────────────┴────────┬─────────┴───────────────┴────────────┘
+                                  │   each is a wrapper, per language;
+                                  │   beneath them it's all one protocol
+                                  ▼
+   ┌──────────────────────────────────────────────────────────────────────┐
+   │  the wire                                                              │
+   │     W3C WebDriver · Appium      →  HTTP        (a call)                │
+   │     CDP · WebDriver BiDi        →  WebSocket   (a channel)             │
+   └──────────────────────────────────────────────────────────────────────┘
+                                  ▲
+                                  │   http-mcp lives here: http_request +
+                                  │   bidi_command. Not above the bindings —
+                                  │   beneath them, the layer they all already
+                                  │   stand on, exposed so an agent can compose
+                                  │   it directly, in any language or none.
+```
+
+A language binding gives one language ergonomic hands. The wire gives *anything*
+that can speak HTTP or a WebSocket the same reach — which now includes a model.
+That's the only claim here: same protocol, one layer down, nothing in the way.
 
 ## Philosophy
 
