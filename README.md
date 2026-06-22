@@ -52,6 +52,20 @@ out — it never interprets a command or composes a sequence; that's the host's
 job. So `peer_ask`-style "ask a target, await its echo" is a *host* composition
 over `bidi_command` + the held channel, never a wire primitive.
 
+`GET /await` turns the afferent stream into one request/response: it blocks until
+an id-less frame matching a substring filter arrives, so a plain caller can wait
+for an event without streaming or polling.
+
+**Known limitations (v1):** two race conditions, named here rather than hidden —
+- **`/await` subscribe-after-send race.** A consumer that does `POST /command`
+  *then* `GET /await` can miss an event that fires in the gap. Safe for slow
+  replies (seconds); unsafe for fast ones (ms). v2 fix: subscribe *before*
+  sending — a `?await=` parameter on `/command`.
+- **Fan-out drop under burst.** Event delivery is non-blocking (a slow consumer
+  is never allowed to stall the wire), so a burst can fill a subscriber's buffer
+  and drop the awaited event. v2 fix: filter at the fan-out so a subscriber's
+  buffer only holds events it asked for.
+
 ## Sessions
 
 Many sessions run at once — local drivers and cloud providers, browsers and
