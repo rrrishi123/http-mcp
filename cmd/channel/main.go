@@ -33,6 +33,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -210,6 +211,52 @@ func (h *hub) handleEvents(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// handleAwait blocks until an id-less frame whose text contains `contains`
+// arrives, then returns that one event. It turns the afferent stream into a
+// single request/response, so a plain caller (http_request — the call atom)
+// can consume the notification without streaming or polling. This is what lets
+// "wait for the peer's reply" be one GET, not a curl SSE or a shell sleep.
+func (h *hub) handleAwait(w http.ResponseWriter, r *http.Request) {
+	contains := r.URL.Query().Get("contains")
+	timeout := 60 * time.Second
+	if q := r.URL.Query().Get("timeout_ms"); q != "" {
+		if ms, err := time.ParseDuration(q + "ms"); err == nil && ms > 0 {
+			timeout = ms
+		}
+	}
+	id := int(atomic.AddInt64(&h.nextSub, 1))
+	ch := make(chan json.RawMessage, 256)
+	h.mu.Lock()
+	h.subs[id] = ch
+	h.mu.Unlock()
+	defer func() {
+		h.mu.Lock()
+		delete(h.subs, id)
+		h.mu.Unlock()
+	}()
+
+	deadline := time.After(timeout)
+	w.Header().Set("Content-Type", "application/json")
+	for {
+		select {
+		case <-r.Context().Done():
+			return
+		case <-deadline:
+			http.Error(w, `{"error":"timeout waiting for event"}`, http.StatusGatewayTimeout)
+			return
+		case ev, ok := <-ch:
+			if !ok {
+				http.Error(w, `{"error":"channel closed"}`, http.StatusBadGateway)
+				return
+			}
+			if contains == "" || strings.Contains(string(ev), contains) {
+				w.Write(ev)
+				return
+			}
+		}
+	}
+}
+
 func (h *hub) handleHealth(w http.ResponseWriter, r *http.Request) {
 	h.mu.Lock()
 	inflight, subs := len(h.pending), len(h.subs)
@@ -248,6 +295,7 @@ func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/command", h.handleCommand)
 	mux.HandleFunc("/events", h.handleEvents)
+	mux.HandleFunc("/await", h.handleAwait)
 	mux.HandleFunc("/health", h.handleHealth)
 
 	log.Printf("channel: holding %s, serving on %s (POST /command, GET /events, GET /health)", *wsURL, *listen)
