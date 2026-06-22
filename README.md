@@ -36,10 +36,21 @@ bidi_command(ws_url, method, params) -> response
 ```
 
 The WebSocket client is hand-rolled in stdlib (`internal/wsx`) — no library, the
-same way `httpx` is just `net/http`. A command gets its response; the persistent,
-fanned-out event *stream* is deliberately not the wire's job — that belongs to a
-broker, and `peer_ask`-style "ask a target, await its echo" is a *host*
-composition over these atoms, never a wire primitive.
+same way `httpx` is just `net/http`. `bidi_command` opens a fresh socket per
+call, which is honest only for *stateless probes* (`browsingContext.getTree`,
+a one-shot navigate). The channel is otherwise **stateful**: a `session.subscribe`
+lives on the socket, a CDP `sessionId` is bound to it, and many effects arrive
+only as events. Close the socket and all of that dies — so the channel's true
+atom is not open-send-close but a **held** connection.
+
+That held connection is `cmd/channel`: it holds one long-lived socket and fronts
+it with `POST /command` (send on the held socket, get the id-matched response)
+and `GET /events` (SSE — every id-less frame fanned out). One reader routes
+frames: id → the waiting command, no-id → the event stream. Subscriptions and
+session state survive across commands. The broker only holds, routes, and fans
+out — it never interprets a command or composes a sequence; that's the host's
+job. So `peer_ask`-style "ask a target, await its echo" is a *host* composition
+over `bidi_command` + the held channel, never a wire primitive.
 
 ## Sessions
 
@@ -87,6 +98,7 @@ The probe verdict beats the snapshot claim, always.
 | `cmd/probe`    | verify a snapshot against a live binary, zero side effects |
 | `cmd/session`  | run one composed session end to end (reference client)    |
 | `cmd/wire`     | transparent witness proxy — logs every call on the wire   |
+| `cmd/channel`  | hold one BiDi/CDP socket; front it with `POST /command` + `GET /events` (SSE) — physics #2's held atom |
 
 ## Run the MCP server
 

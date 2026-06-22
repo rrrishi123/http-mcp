@@ -24,6 +24,7 @@ import (
 	"net"
 	"net/url"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -32,9 +33,24 @@ const wsGUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 
 // Conn is one open WebSocket. Clients MUST mask the frames they send (§5.3);
 // servers MUST NOT mask theirs — the codec below honors both directions.
+//
+// A held channel has one reader (which may emit pong frames inline) and many
+// command writers; wmu serializes all writes so their frames never interleave.
+// Reads are single-reader by contract, so they need no lock.
 type Conn struct {
 	raw net.Conn
 	r   *bufio.Reader
+	wmu sync.Mutex
+}
+
+// write serializes every frame onto the socket — WriteText (callers) and the
+// inline pong (the reader) can both fire, and a half-written frame corrupts the
+// stream for everyone.
+func (c *Conn) write(b []byte) error {
+	c.wmu.Lock()
+	defer c.wmu.Unlock()
+	_, err := c.raw.Write(b)
+	return err
 }
 
 // Dial opens ws:// or wss:// and completes the upgrade handshake. The returned
@@ -161,8 +177,7 @@ func (c *Conn) WriteText(s string) error {
 	for i, b := range payload {
 		buf = append(buf, b^mask[i&3])
 	}
-	_, err := c.raw.Write(buf)
-	return err
+	return c.write(buf)
 }
 
 // ReadText returns the next text-frame payload, answering pings inline and
@@ -238,8 +253,7 @@ func (c *Conn) writeControl(opcode byte, payload []byte) error {
 	for i, b := range payload {
 		buf = append(buf, b^mask[i&3])
 	}
-	_, err := c.raw.Write(buf)
-	return err
+	return c.write(buf)
 }
 
 // Close sends a close frame and tears down the socket.
