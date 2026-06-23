@@ -167,6 +167,37 @@ exposes the primitive and lets the territory describe itself on the wire —
 enumeration. The map (`specs/`) is a prior held lightly; the live call is the
 verdict. The server stays dumb so everything real can grow on top of it.
 
+### Tenets — how it ships
+
+Not aspirations. This is how every change to the wire has actually been made.
+
+- **Discoverability is the feature; tool count is the constraint.** When a need
+  appeared — one held channel, many clients — the answer was not a new tool. It
+  was `discover` surfacing the channel with ready-to-fire examples. A tool that
+  exists only for ergonomics breaks the uniformity, and once broken it never
+  stops breaking. If a model can't follow an example from `discover`, a new tool
+  would not have saved it — it would only paper over the missing reasoning.
+- **Probe the wire; the verdict beats the prior.** `specs/` is a hypothesis;
+  `GET /status`, a driver's own enumeration, a `404`-vs-`405` are the truth.
+  Re-perceive, never assume — and apply the same discipline to yourself: report
+  the symptom, not the story you would prefer.
+- **Correlation is not cause.** This is a distributed system; you see effects
+  through logs and symptoms, rarely the cause directly. "Firefox quit" is an
+  observation; "my change quit it" is a claim that must be earned. Hold the line
+  between the two.
+- **One owner per socket.** A duplex channel is a single socket with exactly one
+  holder (the broker). Clients share it by going *through* the holder, not by
+  fighting for it — no dual-writer races, no Heisenbugs.
+- **Dogfood on the wire you ship.** Drive it with `http_request` and
+  `bidi_command`, never a shell shortcut around them. Verify by looking — a
+  screenshot, a `getTree` — not by asserting it worked.
+- **Lean carries nothing back down.** What stands above the wire may be as rich
+  as it likes; the wire stays atomic and carries none of its weight. Two
+  physics — a call, a channel — and no third smuggled in.
+- **Good for all.** The wire must be usable by the smallest model that can speak
+  HTTP, not only the largest that can reason out a broker's single-socket
+  constraint. The map describes itself; capability is never gated on cleverness.
+
 ## License
 
 MIT.
