@@ -1,0 +1,58 @@
+{
+  "protocol": "bidi",
+  "version": "1.0",
+  "transport": "one WebSocket per browser; all tabs/iframes multiplexed over it, addressed by `context`; commands correlated by `id` (the channel physics).",
+  "methods": {
+    "session.status": {
+      "does": "is the session alive + the protocol responsive (the channel's liveness)",
+      "params": {},
+      "example": {}
+    },
+    "session.subscribe": {
+      "does": "subscribe to events — WITHOUT this the channel emits nothing (one socket, but silent until subscribed)",
+      "params": {"events": {"type": "array", "required": true}},
+      "example": {"events": ["network.responseCompleted", "log.entryAdded"]}
+    },
+    "browsingContext.getTree": {
+      "does": "list tabs/contexts on the channel",
+      "params": {"maxDepth": {"type": "integer", "optional": true}},
+      "example": {}
+    },
+    "browsingContext.create": {
+      "does": "open YOUR OWN new tab (an isolated surface) — returns its context id; pass it in later calls so you do not touch other clients' tabs",
+      "params": {"type": {"type": "string", "enum": ["tab", "window"], "required": true}},
+      "example": {"type": "tab"}
+    },
+    "browsingContext.navigate": {
+      "does": "go to a url in a context",
+      "params": {"context": {"type": "string", "required": true}, "url": {"type": "string", "required": true}, "wait": {"type": "string", "enum": ["none", "interactive", "complete"]}},
+      "example": {"context": "YOUR-CTX", "url": "https://example.com", "wait": "complete"}
+    },
+    "browsingContext.captureScreenshot": {
+      "does": "screenshot a context (viewport keeps it small)",
+      "params": {"context": {"type": "string", "required": true}, "origin": {"type": "string", "enum": ["viewport", "document"]}},
+      "example": {"context": "YOUR-CTX", "origin": "viewport"}
+    },
+    "script.evaluate": {
+      "does": "run JS in a context — type, click, read the DOM, post to a peer",
+      "params": {"expression": {"type": "string", "required": true}, "target": {"type": "object", "required": true}, "awaitPromise": {"type": "boolean"}},
+      "example": {"expression": "document.title", "target": {"context": "YOUR-CTX"}, "awaitPromise": true}
+    },
+    "input.performActions": {
+      "does": "pointer/key action sequences — tap, swipe, drag, type (a real-world gesture, not the wire's)",
+      "params": {"context": {"type": "string", "required": true}, "actions": {"type": "array", "required": true}},
+      "example": {"context": "YOUR-CTX", "actions": []}
+    }
+  },
+  "events": {
+    "_note": "events are first-class — the channel describes what you RECEIVE (the afferent half), not only what you send. Subscribe via session.subscribe, read the stream via GET <broker>/events.",
+    "network.beforeRequestSent": {"does": "a request is about to leave (efferent)", "params": {"context": "string", "request": "object"}},
+    "network.responseCompleted": {"does": "a response arrived (afferent)", "params": {"context": "string", "response": "object"}},
+    "log.entryAdded": {"does": "a console/log entry", "params": {"entry": "object"}},
+    "browsingContext.domContentLoaded": {"does": "a context finished loading", "params": {"context": "string"}}
+  },
+  "verify": {
+    "live": "session.status (or browsingContext.getTree) succeeds -> the socket is alive and the protocol responds",
+    "method_exists": "send the method; a BiDi/JSON-RPC error code -32601 (unknown command) is the channel's 404 (absent); a params/validation error means the method EXISTS but the args were wrong. The probe verdict beats this prior, always."
+  }
+}

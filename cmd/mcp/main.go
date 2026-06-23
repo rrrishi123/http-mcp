@@ -212,6 +212,24 @@ func (s *server) bidiCommand(args map[string]any) any {
 // bidi_command (a 2nd direct ws) is refused — http_request to /command is the way.
 func heldChannels(client *http.Client) []map[string]any {
 	out := []map[string]any{}
+
+	// load the channel spec prior (methods + events) — the SECOND physics now
+	// has specs/, the same discipline as the HTTP route priors; the live probe
+	// still beats the prior.
+	var chanSpec struct {
+		Protocol string `json:"protocol"`
+		Version  string `json:"version"`
+		Methods  map[string]struct {
+			Does    string         `json:"does"`
+			Example map[string]any `json:"example"`
+		} `json:"methods"`
+		Events map[string]any `json:"events"`
+		Verify map[string]any `json:"verify"`
+	}
+	if data, derr := os.ReadFile("/Users/rishirajs/Desktop/repos/http-mcp/specs/channel/bidi@1.0.json"); derr == nil {
+		json.Unmarshal(data, &chanSpec)
+	}
+
 	for port := 4445; port <= 4452; port++ {
 		broker := fmt.Sprintf("http://127.0.0.1:%d", port)
 		hr, err := httpx.Do(client, httpx.Request{Method: "GET", URL: broker + "/health"})
@@ -238,24 +256,29 @@ func heldChannels(client *http.Client) []map[string]any {
 			}
 		}
 
+		// method catalog from the SPEC PRIOR (specs/channel/), not hardcode —
+		// each method carries a ready-to-fire http_request example.
 		cmdURL := broker + "/command"
-		ex := func(method string, params map[string]any) map[string]any {
-			return map[string]any{"tool": "http_request", "method": "POST", "url": cmdURL, "body": map[string]any{"method": method, "params": params}}
-		}
-		methods := map[string]any{
-			"browsingContext.getTree":  map[string]any{"does": "list tabs/contexts", "example_http_request": ex("browsingContext.getTree", map[string]any{})},
-			"browsingContext.create":   map[string]any{"does": "open YOUR OWN new tab (isolated surface) — returns its context id", "example_http_request": ex("browsingContext.create", map[string]any{"type": "tab"})},
-			"browsingContext.navigate": map[string]any{"does": "go to a url in a context", "example_http_request": ex("browsingContext.navigate", map[string]any{"context": "YOUR-CTX", "url": "https://example.com", "wait": "complete"})},
-			"script.evaluate":          map[string]any{"does": "run JS in a context (type/click/read)", "example_http_request": ex("script.evaluate", map[string]any{"expression": "document.title", "target": map[string]any{"context": "YOUR-CTX"}, "awaitPromise": true})},
+		methods := map[string]any{}
+		for name, m := range chanSpec.Methods {
+			params := m.Example
+			if params == nil {
+				params = map[string]any{}
+			}
+			methods[name] = map[string]any{"does": m.Does, "example_http_request": map[string]any{"tool": "http_request", "method": "POST", "url": cmdURL, "body": map[string]any{"method": name, "params": params}}}
 		}
 
 		out = append(out, map[string]any{
-			"broker":   broker,
-			"health":   health,
-			"contexts": contexts,
-			"methods":  methods,
-			"events":   map[string]any{"does": "subscribe to this channel's events (SSE)", "example_http_request": map[string]any{"tool": "http_request", "method": "GET", "url": broker + "/events"}},
-			"how":      "ONE socket, broker-held — do NOT bidi_command it (a 2nd ws is refused). Use http_request with the examples above. browsingContext.create gives you your own tab; pass that context in later calls so you do not touch other clients' tabs.",
+			"broker":          broker,
+			"protocol":        chanSpec.Protocol,
+			"spec":            "specs/channel/bidi@" + chanSpec.Version,
+			"health":          health,
+			"contexts":        contexts,
+			"methods":         methods,
+			"events":          chanSpec.Events,
+			"verify":          chanSpec.Verify,
+			"events_endpoint": map[string]any{"tool": "http_request", "method": "GET", "url": broker + "/events", "note": "SSE; subscribe first via session.subscribe"},
+			"how":             "ONE socket, broker-held — do NOT bidi_command it (a 2nd ws is refused). http_request the examples; browsingContext.create gives you your own tab; pass that context in later calls.",
 		})
 	}
 	return out

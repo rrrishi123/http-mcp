@@ -103,6 +103,14 @@ go run ./cmd/probe http://localhost:4444 geckodriver@0.37.0
 A `404`/plain-text means the route is absent; a W3C JSON error means it exists.
 The probe verdict beats the snapshot claim, always.
 
+The same discipline now covers the **second physics**. `specs/channel/` holds a
+BiDi/CDP catalog — not routes but *methods + events* (the afferent half is
+first‑class — what the channel *emits*, not only what you send). `discover`
+surfaces a held channel against it, each method with a ready‑to‑fire
+`http_request` example. The channel's verdict is the JSON‑RPC error code:
+`-32601` (unknown command) is its `404`; a params error means the method exists.
+Both physics, one discipline — a prior held lightly, the live wire as the verdict.
+
 ## Commands
 
 | command        | what it does                                              |
