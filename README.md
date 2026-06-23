@@ -2,6 +2,11 @@
 
 An MCP server whose tools are protocol calls.
 
+[**▶ See the two physics**](experience/) — fire a call, hold a channel, watch the
+shapes diverge. Don't read the difference; watch it.
+
+![a call, a channel — the two physics, in motion](experience/wire.png)
+
 A call is four fields: `method`, `url`, `headers`, `body`. The server makes
 the call and returns the response. Nothing else.
 

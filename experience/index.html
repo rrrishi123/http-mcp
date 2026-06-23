@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>the wire — two physics</title>
+<style>
+  :root{
+    --bg:#0c0c0f; --ink:#ece7dd; --dim:#746f67; --faint:#3a3833;
+    --call:#5b8def; --chan:#b07cff; --gold:#d8a657; --line:#23222a;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--ink);
+    font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    -webkit-font-smoothing:antialiased}
+  .wrap{max-width:920px;margin:0 auto;padding:64px 24px 96px}
+  .kicker{font:600 12px/1 ui-monospace,SFMono-Regular,Menlo,monospace;
+    letter-spacing:.22em;text-transform:uppercase;color:var(--dim)}
+  h1{font:400 clamp(40px,7vw,76px)/1.02 Georgia,"Times New Roman",serif;
+    margin:.28em 0 .1em;letter-spacing:-.01em}
+  h1 em{font-style:italic;color:var(--gold)}
+  .sub{color:var(--dim);max-width:40ch;margin:0 0 40px;font-size:17px}
+  .stage{border:1px solid var(--line);border-radius:14px;background:
+    radial-gradient(120% 140% at 50% -20%,#15141a 0%,#0c0c0f 60%);
+    padding:8px 8px 0;overflow:hidden}
+  canvas{display:block;width:100%;height:auto}
+  .controls{display:flex;flex-wrap:wrap;gap:10px;margin:20px 0 8px}
+  button{font:600 14px/1 inherit;color:var(--ink);background:#17161d;
+    border:1px solid var(--line);border-radius:999px;padding:11px 18px;cursor:pointer;
+    transition:border-color .15s,transform .06s,background .15s}
+  button:hover{border-color:#46434f;background:#1d1c25}
+  button:active{transform:translateY(1px)}
+  button.call{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--call) 35%,transparent)}
+  button.chan{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--chan) 35%,transparent)}
+  button[disabled]{opacity:.4;cursor:not-allowed}
+  .legend{display:flex;flex-wrap:wrap;gap:18px 26px;margin:30px 0 0;
+    font:13px/1.4 ui-monospace,monospace;color:var(--dim)}
+  .legend b{color:var(--ink);font-weight:600}
+  .dot{display:inline-block;width:9px;height:9px;border-radius:50%;
+    margin-right:7px;vertical-align:middle}
+  .twocol{display:grid;grid-template-columns:1fr 1fr;gap:30px;margin-top:54px}
+  @media(max-width:640px){.twocol{grid-template-columns:1fr}}
+  .twocol h3{font:400 22px/1.1 Georgia,serif;margin:0 0 6px}
+  .twocol p{color:var(--dim);font-size:15px;margin:0}
+  .twocol code{color:var(--ink);font:13px/1 ui-monospace,monospace;
+    background:#17161d;border:1px solid var(--line);border-radius:5px;padding:2px 6px}
+  .foot{margin-top:64px;color:var(--faint);font:13px/1.6 ui-monospace,monospace}
+  .foot a{color:var(--dim)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="kicker">http-mcp · the wire</div>
+  <h1>A call. A <em>channel</em>.</h1>
+  <p class="sub">Two physics, not one. Don't read the difference — fire it, and watch the shapes diverge.</p>
+
+  <div class="stage"><canvas id="c" width="1760" height="900"></canvas></div>
+
+  <div class="controls">
+    <button class="call" id="fire">fire a call</button>
+    <button class="chan" id="send">send a command</button>
+    <button class="chan" id="toggle">close the channel</button>
+  </div>
+
+  <div class="legend">
+    <span><span class="dot" style="background:var(--call)"></span><b>request → response</b> · a call: you ask once, one answer, then silence</span>
+    <span><span class="dot" style="background:var(--chan)"></span><b>command ⇄ reply</b> · matched by id on the held line</span>
+    <span><span class="dot" style="background:var(--gold)"></span><b>event</b> · arrives unbidden — the afferent half</span>
+  </div>
+
+  <div class="twocol">
+    <div>
+      <h3>a call</h3>
+      <p>Request, response, done. The socket opens for one round trip and closes. State lives nowhere between calls — <code>POST /session</code>, an answer, gone. Fire ten; each is alone.</p>
+    </div>
+    <div>
+      <h3>a channel</h3>
+      <p>One socket, held open. You send commands and a reply comes back matched by <code>id</code> — but events arrive on their own, unasked. Close it and every subscription, every <code>sessionId</code>, dies with the line.</p>
+    </div>
+  </div>
+
+  <p class="foot">Two physics — a call, a channel — and no third smuggled in. ·
+    inspired by <a href="https://chenglou.me/pretext/">pretext</a> — experienced, not narrated.</p>
+</div>
+
+<script>
+const cv = document.getElementById('c'), ctx = cv.getContext('2d');
+const W = cv.width, H = cv.height;
+const C = { bg:'#0c0c0f', dim:'#746f67', faint:'#2c2b32', line:'#36343f',
+  call:'#5b8def', chan:'#b07cff', gold:'#d8a657', ink:'#ece7dd' };
+
+// two horizontal wires
+const rowCall = H*0.30, rowChan = H*0.70;
+const Lx = 210, Rx = W-210, nodeR = 13;
+
+let channelOpen = true;
+let cmdSeq = 0;
+const packets = []; // {wire, kind, dir, p, id, color, speed}
+
+function spawn(wire, kind, dir, color, id){
+  packets.push({wire,kind,dir,p:0,id:id??null,color,speed:0.0075});
+}
+// a call = req out, then res back
+function fireCall(){
+  spawn('call','req','out',C.call);
+}
+// a channel command = cmd out (id), reply back (same id)
+function sendCommand(){
+  if(!channelOpen) return;
+  const id = ++cmdSeq;
+  spawn('chan','cmd','out',C.chan,id);
+}
+// events arrive unbidden while open
+let lastEvent = 0;
+function maybeEvent(t){
+  if(channelOpen && t-lastEvent > 850){
+    lastEvent = t;
+    spawn('chan','event','in',C.gold);
+  }
+}
+
+function rowOf(w){ return w==='call'?rowCall:rowChan; }
+function xAt(p,dir){ return dir==='out' ? Lx+(Rx-Lx)*p : Rx-(Rx-Lx)*p; }
+
+function dotLabel(kind){
+  return {req:'req',res:'res',cmd:'cmd',reply:'reply',event:'evt'}[kind]||'';
+}
+
+function draw(t){
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle = C.bg; ctx.fillRect(0,0,W,H);
+
+  // ---- wires ----
+  drawWire(rowCall, 'call', true, C.call, 'a CALL', 'client', 'server');
+  drawWire(rowChan, 'chan', channelOpen, C.chan, 'a CHANNEL', 'client', 'browser');
+
+  // ---- packets ----
+  for(const pk of packets){
+    const y = rowOf(pk.wire);
+    const x = xAt(pk.p, pk.dir);
+    const r = pk.kind==='event'?9:13;
+    // glow
+    const g = ctx.createRadialGradient(x,y,0,x,y,r*3.4);
+    g.addColorStop(0, pk.color); g.addColorStop(1, 'transparent');
+    ctx.globalAlpha = .55; ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(x,y,r*3.4,0,7); ctx.fill();
+    ctx.globalAlpha = 1;
+    // core
+    ctx.fillStyle = pk.color;
+    ctx.beginPath(); ctx.arc(x,y,r,0,7); ctx.fill();
+    // id / label
+    ctx.fillStyle = C.bg; ctx.font = '600 16px ui-monospace,monospace';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(pk.id!=null?('#'+pk.id):dotLabel(pk.kind).slice(0,1).toUpperCase(), x, y+1);
+  }
+
+  // advance
+  for(const pk of packets){ pk.p += pk.speed; }
+  // resolve arrivals
+  for(let i=packets.length-1;i>=0;i--){
+    const pk = packets[i];
+    if(pk.p < 1) continue;
+    if(pk.wire==='call' && pk.kind==='req'){ packets[i]={...pk}; spawn('call','res','in',C.call); packets.splice(i,1); }
+    else if(pk.wire==='chan' && pk.kind==='cmd'){ spawn('chan','reply','in',C.chan,pk.id); packets.splice(i,1); }
+    else { packets.splice(i,1); } // res / reply / event reach the end → consumed
+  }
+
+  maybeEvent(t);
+  requestAnimationFrame(draw);
+}
+
+function drawWire(y, kind, open, color, title, lLabel, rLabel){
+  const held = kind==='chan' && open;        // only an open channel holds the line
+  // line — held = solid lit; otherwise dashed (no socket on the wire)
+  ctx.lineWidth = 3;
+  if(held){ ctx.strokeStyle=color; ctx.globalAlpha=.55; ctx.setLineDash([]); }
+  else { ctx.strokeStyle=C.line; ctx.globalAlpha=1; ctx.setLineDash([6,10]); }
+  ctx.beginPath(); ctx.moveTo(Lx,y); ctx.lineTo(Rx,y); ctx.stroke();
+  ctx.setLineDash([]); ctx.globalAlpha=1;
+
+  // nodes
+  for(const [nx,lab,align] of [[Lx,lLabel,'right'],[Rx,rLabel,'left']]){
+    ctx.fillStyle = C.bg; ctx.strokeStyle = held?color:C.line; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.arc(nx,y,nodeR,0,7); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = C.dim; ctx.font='500 22px -apple-system,sans-serif';
+    ctx.textBaseline='middle';
+    if(align==='right'){ ctx.textAlign='right'; ctx.fillText(lab, nx-28, y); }
+    else { ctx.textAlign='left'; ctx.fillText(lab, nx+28, y); }
+  }
+  // title above the wire
+  ctx.fillStyle = color; ctx.globalAlpha=(kind==='chan'&&!open)?.5:1;
+  ctx.font='italic 400 30px Georgia,serif'; ctx.textAlign='left'; ctx.textBaseline='alphabetic';
+  ctx.fillText(title, Lx, y-46);
+  ctx.globalAlpha=1;
+  // caption — each wire tells its own truth
+  ctx.font='500 19px ui-monospace,monospace'; ctx.textBaseline='alphabetic';
+  if(kind==='call'){
+    ctx.fillStyle=C.dim; ctx.fillText('no socket between calls — request, response, gone', Lx, y+52);
+  } else if(!open){
+    ctx.fillStyle=C.dim; ctx.fillText('socket closed — subscriptions & sessionId gone', Lx, y+52);
+  } else {
+    ctx.fillStyle=color; ctx.globalAlpha=.7;
+    ctx.fillText('held open — events arrive unbidden', Lx, y+52); ctx.globalAlpha=1;
+  }
+}
+
+document.getElementById('fire').onclick = fireCall;
+document.getElementById('send').onclick = sendCommand;
+const tg = document.getElementById('toggle');
+tg.onclick = ()=>{
+  channelOpen = !channelOpen;
+  tg.textContent = channelOpen ? 'close the channel' : 'open the channel';
+  document.getElementById('send').disabled = !channelOpen;
+  if(!channelOpen){ // drop everything on the held line — it dies with the socket
+    for(let i=packets.length-1;i>=0;i--) if(packets[i].wire==='chan') packets.splice(i,1);
+  }
+};
+
+requestAnimationFrame(draw);
+</script>
+</body>
+</html>
