@@ -123,7 +123,7 @@ func (s *server) tools() []any {
 					"session_id": str("Optional live session id — enables cap-read and Appium self-enumeration."),
 					"spec":       str("Spec name to probe against, e.g. geckodriver@0.37.0 or webdriver@wdio-9.28.0. Omit to probe all known specs."),
 				},
-				"required": []any{"hub_url"},
+				"required": []any{},
 			},
 		},
 		map[string]any{
@@ -202,17 +202,80 @@ func (s *server) bidiCommand(args map[string]any) any {
 	}
 }
 
+// heldChannels probes the conventional broker ports for live HELD channels and
+// surfaces each one as an entry in discover's cartesian product of protocols —
+// alongside specs/ (HTTP route priors) and Appium self-enumeration. No new tool:
+// for each channel it returns the live contexts (tabs) plus a method catalog
+// where EVERY method carries a ready-to-fire http_request example, so even a
+// small model just copies the example into http_request — no JSON-RPC reasoning,
+// no broker-URL guessing. A Firefox BiDi channel is ONE socket the broker holds;
+// bidi_command (a 2nd direct ws) is refused — http_request to /command is the way.
+func heldChannels(client *http.Client) []map[string]any {
+	out := []map[string]any{}
+	for port := 4445; port <= 4452; port++ {
+		broker := fmt.Sprintf("http://127.0.0.1:%d", port)
+		hr, err := httpx.Do(client, httpx.Request{Method: "GET", URL: broker + "/health"})
+		if err != nil || hr.Status != 200 {
+			continue
+		}
+		var health map[string]any
+		json.Unmarshal([]byte(hr.Body), &health)
+
+		// live contexts (tabs) via getTree
+		contexts := []map[string]any{}
+		if tr, terr := httpx.Do(client, httpx.Request{Method: "POST", URL: broker + "/command", Headers: map[string]string{"Content-Type": "application/json"}, Body: `{"method":"browsingContext.getTree","params":{}}`}); terr == nil {
+			var t struct {
+				Result struct {
+					Contexts []struct {
+						Context string `json:"context"`
+						URL     string `json:"url"`
+					} `json:"contexts"`
+				} `json:"result"`
+			}
+			json.Unmarshal([]byte(tr.Body), &t)
+			for _, c := range t.Result.Contexts {
+				contexts = append(contexts, map[string]any{"context": c.Context, "url": c.URL})
+			}
+		}
+
+		cmdURL := broker + "/command"
+		ex := func(method string, params map[string]any) map[string]any {
+			return map[string]any{"tool": "http_request", "method": "POST", "url": cmdURL, "body": map[string]any{"method": method, "params": params}}
+		}
+		methods := map[string]any{
+			"browsingContext.getTree":  map[string]any{"does": "list tabs/contexts", "example_http_request": ex("browsingContext.getTree", map[string]any{})},
+			"browsingContext.create":   map[string]any{"does": "open YOUR OWN new tab (isolated surface) — returns its context id", "example_http_request": ex("browsingContext.create", map[string]any{"type": "tab"})},
+			"browsingContext.navigate": map[string]any{"does": "go to a url in a context", "example_http_request": ex("browsingContext.navigate", map[string]any{"context": "YOUR-CTX", "url": "https://example.com", "wait": "complete"})},
+			"script.evaluate":          map[string]any{"does": "run JS in a context (type/click/read)", "example_http_request": ex("script.evaluate", map[string]any{"expression": "document.title", "target": map[string]any{"context": "YOUR-CTX"}, "awaitPromise": true})},
+		}
+
+		out = append(out, map[string]any{
+			"broker":   broker,
+			"health":   health,
+			"contexts": contexts,
+			"methods":  methods,
+			"events":   map[string]any{"does": "subscribe to this channel's events (SSE)", "example_http_request": map[string]any{"tool": "http_request", "method": "GET", "url": broker + "/events"}},
+			"how":      "ONE socket, broker-held — do NOT bidi_command it (a 2nd ws is refused). Use http_request with the examples above. browsingContext.create gives you your own tab; pass that context in later calls so you do not touch other clients' tabs.",
+		})
+	}
+	return out
+}
+
 // discover fires the wire's self-description against hub_url and returns
 // what the wire actually says. It is the re-perceiver: prior (specs/) is the
-// hypothesis; the live wire is the verdict.
+// hypothesis; the live wire is the verdict. It ALSO surfaces held channels
+// (shared duplex sockets) so a client never has to guess a broker exists.
 func (s *server) discover(args map[string]any) any {
-	hub := str(args["hub_url"])
-	if hub == "" {
-		return toolErr("hub_url is required")
+	hub := strings.TrimRight(str(args["hub_url"]), "/")
+	out := map[string]any{}
+	if ch := heldChannels(s.client); len(ch) > 0 {
+		out["held_channels"] = ch
 	}
-	hub = strings.TrimRight(hub, "/")
-
-	out := map[string]any{"hub_url": hub}
+	if hub == "" {
+		out["note"] = "no hub_url — returning held_channels only; pass hub_url to also re-perceive an HTTP hub"
+		return toolText(out)
+	}
+	out["hub_url"] = hub
 
 	// Layer 1: status
 	resp, err := httpx.Do(s.client, httpx.Request{Method: "GET", URL: hub + "/status"})
