@@ -22,8 +22,8 @@
     "apps_api": "https://manual-api.lambdatest.com/app/data",
     "apps_upload": "https://manual-api.lambdatest.com/app/upload/realDevice",
     "framework_upload": "https://manual-api.lambdatest.com/app/uploadFramework",
-    "framework_build": "https://manual-api.lambdatest.com/framework",
-    "_framework_build_alt": "https://mobile-api.lambdatest.com/framework — host observed in QA-sanctum prod runs; public api-doc canonicalizes manual-api. Both reach the same App-Automation real-device framework service."
+    "framework_build": "https://mobile-api.lambdatest.com/framework",
+    "_framework_build_host_finding": "VERIFIED 2026-06-24: the public api-doc curl says manual-api.lambdatest.com/framework/v1/espresso/build but that host returns 500 (nginx, cfOrigin) on the build route — manual-api is the UPLOAD host only. The live working build host is mobile-api.lambdatest.com/framework/v1/{espresso,xcui}/build (QA-sanctum prod). Auth (Basic) is accepted on both; only mobile-api routes the build. Run proof: POST mobile-api .../v1/espresso/build via http-mcp prod:adminltqa -> {status:[Success],buildId:[22983015]}, appeared Running on appautomation.lambdatest.com."
   },
 
   "frameworks": {
@@ -78,23 +78,30 @@
     },
     "espresso": {
       "physics": "call", "tool": "http_request", "endpoint": "framework_build", "inject_auth": "basic_header",
-      "_doc": "native Android instrumented suite. NOT an appium session — a framework BUILD: upload app+testSuite -> POST a build -> poll status. Verified from public api-doc (testmuai.com/support/api-doc/app-automation-api-real-devices/) driven over the channel 2026-06-24.",
+      "_doc": "native Android instrumented suite. NOT an appium session — a framework BUILD: upload app+testSuite -> POST a build -> poll status. Endpoint mapped from public api-doc (channel, 2026-06-24); host corrected to mobile-api after manual-api 500'd; RUN-verified via http-mcp prod:adminltqa.",
       "prereq_upload": "POST framework_upload (multipart) appFile=<.apk>, type=espresso-android, name=<label> -> returns lt://APP... for both the app and the test suite",
       "create": "POST /v1/espresso/build",
-      "url": "https://manual-api.lambdatest.com/framework/v1/espresso/build",
+      "url": "https://mobile-api.lambdatest.com/framework/v1/espresso/build",
       "payload_template": {"app": "lt://{app_id}", "testSuite": "lt://{test_suite_id}", "device": ["{device}-{mobile_version}"], "queueTimeout": 600, "idleTimeout": 600, "deviceLog": true, "network": true, "build": "{build_name}", "geoLocation": "{geo}"},
       "response": {"status": ["Success"], "buildId": ["<id>"], "message": [""]},
-      "status_poll": "App-Automation build-status endpoint (sibling 'Get Build Status') -> verdict; the miss is the gold.",
+      "rd_vd": {
+        "espresso-rd": {"_doc": "real-device cloud (api-doc: App Automation API REAL Devices). device names are physical models; the build host is mobile-api/framework/v1/espresso/build.", "verified": "espresso-rd — PASSED 2026-06-24 via http-mcp prod:adminltqa, buildId 22983015, device [Galaxy S23-13], 4 sessions, 1m 13s, seen Passed on appautomation.lambdatest.com (secret stayed below the boundary; auth:{profile} -> basic_header)"},
+        "espresso-vd": {"_doc": "virtual-device cloud (separate api-doc tree: App Automation API VIRTUAL Devices). VD honors different/extra caps and a different device catalog (emulators); same /v1/espresso/build shape but VD device names. TODO: capture the VD doc tree + RUN to verify the bifurcation.", "verified": "pending"}
+      },
       "known_ids": {"espressoMyApp": "lt://APP1016062831782302928082971", "espressoMyTestApp": "lt://APP1016044271782302930059141"}
     },
     "xcuitest": {
       "physics": "call", "tool": "http_request", "endpoint": "framework_build", "inject_auth": "basic_header",
-      "_doc": "native iOS XCUITest suite — exact sibling of espresso (public api-doc: 'Execute XCUI test on the LambdaTest platform (Server 3)').",
+      "_doc": "native iOS XCUITest suite — exact sibling of espresso (public api-doc: 'Execute XCUI test on the LambdaTest platform (Server 3)'). Same host correction (mobile-api).",
       "prereq_upload": "POST framework_upload (multipart) appFile=<.ipa/.zip>, type=xcuit-ios, name=<label> -> lt://APP...",
       "create": "POST /v1/xcui/build",
-      "url": "https://manual-api.lambdatest.com/framework/v1/xcui/build",
+      "url": "https://mobile-api.lambdatest.com/framework/v1/xcui/build",
       "payload_template": {"app": "lt://{app_id}", "testSuite": "lt://{test_suite_id}", "device": ["{device}-{mobile_version}"], "queueTimeout": 600, "idleTimeout": 600, "deviceLog": true, "network": true, "build": "{build_name}", "geoLocation": "{geo}"},
-      "response": {"status": ["Success"], "buildId": ["<id>"], "message": [""]}
+      "response": {"status": ["Success"], "buildId": ["<id>"], "message": [""]},
+      "rd_vd": {
+        "xcui-rd": {"_doc": "real iOS devices; build host mobile-api/framework/v1/xcui/build.", "verified": "pending — needs an uploaded .ipa app+testSuite"},
+        "xcui-vd": {"_doc": "iOS simulators (virtual-devices tree); different caps/catalog.", "verified": "pending"}
+      }
     }
   },
 
@@ -113,6 +120,8 @@
     },
     "cypress_automation": "result-fetch only (GET): zipped-report, command-logs, console-log, network-log, enhanced-mochawesome — see frameworks.cypress",
     "smart_ui": "GET api.lambdatest.com/automation/smart-ui/build/status — see _smartui_build_status",
+    "api_set_switcher": "the api-doc splits into exactly 3 API sets (verified 2026-06-24): 'Selenium Automation API', 'Automated Screenshots API', 'App Automation API (Real Devices)'. There is NO separate 'Virtual Devices' app-automation API doc. So RD/VD for app-automation is NOT two API trees: RD is the documented framework/appium path; VD (emulators/simulators) is the SAME wire with the virtual device pool and, for appium, appium:isRealMobile:false. Espresso/XCUI framework builds are documented for real devices only.",
+    "host_500_finding": "manual-api.lambdatest.com 500s (nginx/cfOrigin) on the LIVE routes tested with a valid Basic credential — /framework/v1/espresso/build AND /list both 500. manual-api works only for the multipart UPLOAD (app/uploadFramework). The live functional host for builds (and likely the device list) is mobile-api.lambdatest.com. Public api-doc curls show manual-api but it is stale/deprecated for these routes.",
     "verified_curls": {
       "uploadFramework": "POST manual-api.lambdatest.com/app/uploadFramework  -H 'Authorization: Basic <enc>' -H 'Content-Type: multipart/form-data' -F appFile=<file> -F type=espresso-android -F name=<label>",
       "espresso_build": "POST manual-api.lambdatest.com/framework/v1/espresso/build  -H 'Authorization: Basic <enc>' -H 'Content-Type: application/json' --data '{app,testSuite,device:[],queueTimeout,idleTimeout,deviceLog,network,build,geoLocation}'  -> {status:[Success],buildId:[\"1395514\"],message:[\"\"]}",
