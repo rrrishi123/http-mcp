@@ -19,7 +19,11 @@
     "cdp": "wss://cdp.lambdatest.com",
     "hyperexecute": "https://api.hyperexecute.cloud",
     "automation_api": "https://api.lambdatest.com/automation/api/v1",
-    "apps_api": "https://manual-api.lambdatest.com/app/data"
+    "apps_api": "https://manual-api.lambdatest.com/app/data",
+    "apps_upload": "https://manual-api.lambdatest.com/app/upload/realDevice",
+    "framework_upload": "https://manual-api.lambdatest.com/app/uploadFramework",
+    "framework_build": "https://manual-api.lambdatest.com/framework",
+    "_framework_build_alt": "https://mobile-api.lambdatest.com/framework — host observed in QA-sanctum prod runs; public api-doc canonicalizes manual-api. Both reach the same App-Automation real-device framework service."
   },
 
   "frameworks": {
@@ -56,16 +60,63 @@
       "note": "CATCH: /playwright speaks Playwright's OWN protocol (a CDP superset), NOT raw CDP. bidi_command cannot drive it — a host-side Playwright client (8/pilot) must. For the raw-CDP path use the puppeteer entry."
     },
     "cypress": {
-      "physics": "call", "tool": "http_request", "endpoint": "hyperexecute", "inject_auth": "basic_header",
-      "note": "job submission — POST a HyperExecute YAML + repo, poll for results. Not a live remote-control."
+      "physics": "call", "tool": "http_request", "endpoint": "automation_api", "inject_auth": "basic_header",
+      "_doc": "NOT HyperExecute, NOT a live wire. Cypress runs as a JOB: the lambdatest-cypress-cli zips the project + lambdatest-config.json and POSTs a build; results are pulled by GET. The public api-doc 'Cypress Automation > Cypress' section exposes only RESULT-fetch endpoints (captured 2026-06-24 over the channel) — the run is CLI-submitted, so this is a runner, not remote-control.",
+      "result_endpoints": {
+        "zipped_report": "/support/api-doc/cypress-automation/cypress/zipped-report-for-a-cypress-test/",
+        "command_logs": "/support/api-doc/cypress-automation/cypress/command-logs-of-a-cypress-test-id/",
+        "console_log": "/support/api-doc/cypress-automation/cypress/console-log-of-a-cypress-test-id/",
+        "network_log": "/support/api-doc/cypress-automation/cypress/network-log-of-a-cypress-test-id/",
+        "mochawesome": "/support/api-doc/cypress-automation/cypress/enhanced-mochawesome-json-report/"
+      }
     },
-    "xcuitest": {
-      "physics": "call", "tool": "http_request", "endpoint": "mobile_hub",
-      "note": "native iOS — driven via WDA over HTTP (a CALL), or a native test job on HyperExecute."
+    "_smartui_build_status": {
+      "physics": "call", "tool": "http_request", "inject_auth": "basic_header",
+      "endpoint": "GET https://api.lambdatest.com/automation/smart-ui/build/status",
+      "response": {"data": {"changesFound": 2, "approved": 3, "underReview": 0, "rejected": 0, "buildId": "<uuid>", "buildName": "<name>", "buildStatus": "Changes Need Approval"}, "status": "success"},
+      "note": "visual-diff build status (NOT the espresso/xcui framework build status). Captured from public api-doc 2026-06-24."
     },
     "espresso": {
-      "physics": "call", "tool": "http_request", "endpoint": "hyperexecute",
-      "note": "native Android — submitted as a test job (a CALL)."
+      "physics": "call", "tool": "http_request", "endpoint": "framework_build", "inject_auth": "basic_header",
+      "_doc": "native Android instrumented suite. NOT an appium session — a framework BUILD: upload app+testSuite -> POST a build -> poll status. Verified from public api-doc (testmuai.com/support/api-doc/app-automation-api-real-devices/) driven over the channel 2026-06-24.",
+      "prereq_upload": "POST framework_upload (multipart) appFile=<.apk>, type=espresso-android, name=<label> -> returns lt://APP... for both the app and the test suite",
+      "create": "POST /v1/espresso/build",
+      "url": "https://manual-api.lambdatest.com/framework/v1/espresso/build",
+      "payload_template": {"app": "lt://{app_id}", "testSuite": "lt://{test_suite_id}", "device": ["{device}-{mobile_version}"], "queueTimeout": 600, "idleTimeout": 600, "deviceLog": true, "network": true, "build": "{build_name}", "geoLocation": "{geo}"},
+      "response": {"status": ["Success"], "buildId": ["<id>"], "message": [""]},
+      "status_poll": "App-Automation build-status endpoint (sibling 'Get Build Status') -> verdict; the miss is the gold.",
+      "known_ids": {"espressoMyApp": "lt://APP1016062831782302928082971", "espressoMyTestApp": "lt://APP1016044271782302930059141"}
+    },
+    "xcuitest": {
+      "physics": "call", "tool": "http_request", "endpoint": "framework_build", "inject_auth": "basic_header",
+      "_doc": "native iOS XCUITest suite — exact sibling of espresso (public api-doc: 'Execute XCUI test on the LambdaTest platform (Server 3)').",
+      "prereq_upload": "POST framework_upload (multipart) appFile=<.ipa/.zip>, type=xcuit-ios, name=<label> -> lt://APP...",
+      "create": "POST /v1/xcui/build",
+      "url": "https://manual-api.lambdatest.com/framework/v1/xcui/build",
+      "payload_template": {"app": "lt://{app_id}", "testSuite": "lt://{test_suite_id}", "device": ["{device}-{mobile_version}"], "queueTimeout": 600, "idleTimeout": 600, "deviceLog": true, "network": true, "build": "{build_name}", "geoLocation": "{geo}"},
+      "response": {"status": ["Success"], "buildId": ["<id>"], "message": [""]}
+    }
+  },
+
+  "doc_capture": {
+    "source": "https://www.testmuai.com/support/api-doc/ (public prod, no auth to read)",
+    "method": "driven over the CHANNEL (bidi_command/script.evaluate via http-mcp) 2026-06-24 — the api-doc is a client-routed SPA whose sidebar is a collapsed accordion: NOT in sitemap.xml (only 5 selenium pages are). Method that works: click button[aria-label^='Toggle ... section'] to expand a group -> the group renders its leaves as <a href> -> read the hrefs; then browsingContext.navigate directly to a leaf href (Cloudflare managed-challenge clears itself in the live Firefox) and read the <pre>/<code> curl blocks. Synthetic .click() on a leaf is flaky; direct navigate is reliable.",
+    "app_automation_real_devices": {
+      "_base": "/support/api-doc/app-automation-api-real-devices/",
+      "application_espresso_xcui": ["application-espresso-xcui/upload-a-framework-file-for-testing-espresso-xcui-server-1 -> POST manual-api.lambdatest.com/app/uploadFramework (multipart appFile,type,name; type=espresso-android|xcuit-ios)"],
+      "execute_test_espresso_xcui": ["execute-test-espresso-xcui/execute-espresso-test-on-the-lambdatest-platform-server-3 -> POST manual-api.lambdatest.com/framework/v1/espresso/build", "execute-test-espresso-xcui/execute-xcui-test-on-the-lambdatest-platform-server-3 -> POST manual-api.lambdatest.com/framework/v1/xcui/build"],
+      "application_appium": ["upload-application-to-a-real-device-server-1", "fetch-all-uploaded-applications-server-1", "get-data-by-custom-id-server-1", "download-app-by-id-server-1", "download-app-by-custom-id-server-1", "delete-your-uploaded-applications-server-1", "delete-a-single-uploaded-application-server-1"],
+      "application_processing_appium": ["fetch-patched-apk-url-server-3"],
+      "media": ["fetch-media-list-for-an-organization-server-4", "delete-a-media-asset-server-4", "upload-media-file-image-video-document-certificate-server-4"],
+      "devices_list": ["fetch-available-devices-for-running-tests-server-2 — live source for the device/mobile_version x_axes"],
+      "concurrency_details": ["get-your-account-s-concurrency-details-server-2"]
+    },
+    "cypress_automation": "result-fetch only (GET): zipped-report, command-logs, console-log, network-log, enhanced-mochawesome — see frameworks.cypress",
+    "smart_ui": "GET api.lambdatest.com/automation/smart-ui/build/status — see _smartui_build_status",
+    "verified_curls": {
+      "uploadFramework": "POST manual-api.lambdatest.com/app/uploadFramework  -H 'Authorization: Basic <enc>' -H 'Content-Type: multipart/form-data' -F appFile=<file> -F type=espresso-android -F name=<label>",
+      "espresso_build": "POST manual-api.lambdatest.com/framework/v1/espresso/build  -H 'Authorization: Basic <enc>' -H 'Content-Type: application/json' --data '{app,testSuite,device:[],queueTimeout,idleTimeout,deviceLog,network,build,geoLocation}'  -> {status:[Success],buildId:[\"1395514\"],message:[\"\"]}",
+      "xcui_build": "POST manual-api.lambdatest.com/framework/v1/xcui/build  (identical shape to espresso_build)"
     }
   },
 
