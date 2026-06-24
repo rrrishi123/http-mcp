@@ -82,19 +82,23 @@ type result struct {
 }
 
 var (
-	flagProfile  = flag.String("profile", "prod:adminltqa", "auth profile resolved below the boundary")
-	flagBuild    = flag.String("build", "http-mcp matrix", "build name on the dashboards")
-	flagParallel = flag.Int("parallel", 3, "max concurrent combos (respect cloud parallel limits)")
-	flagOnly     = flag.String("only", "", "substring filter: only run combos whose name contains this")
-	flagRetries  = flag.Int("retries", 1, "attempts per combo before marking failed (flaky real devices)")
-	flagReqApps  = flag.Bool("require-apps", false, "fail (not skip) combos whose prereq app is absent from the spec")
-	flagSpec     = flag.String("spec", "specs/providers/lambdatest.json", "provider spec to read endpoints + app ids from")
-	flagLimit    = flag.Int("limit", 0, "cap how many combos to actually RUN (0 = run all; the curated set is small)")
-	flagFull     = flag.Bool("full", false, "run the entire matrix (overrides --limit)")
-	flagPwRunner = flag.String("pw-runner", "", "path to a node Playwright driver script; if set, host playwright combos run via `node <script> <authfile> <capsJSON>`")
-	flagDry      = flag.Bool("dry", false, "print the generated combos and exit — no smoke, no cloud sessions")
-	flagDuration = flag.Duration("duration", 0, "drive each session this long with real activity (navigate+screenshot) so artifacts are non-empty; e.g. 3m for a genuine run (0 = create+verify+teardown only)")
+	flagProfile   = flag.String("profile", "prod:adminltqa", "auth profile resolved below the boundary")
+	flagBuild     = flag.String("build", "http-mcp matrix", "build name on the dashboards")
+	flagParallel  = flag.Int("parallel", 3, "max concurrent combos (respect cloud parallel limits)")
+	flagOnly      = flag.String("only", "", "substring filter: only run combos whose name contains this")
+	flagRetries   = flag.Int("retries", 1, "attempts per combo before marking failed (flaky real devices)")
+	flagReqApps   = flag.Bool("require-apps", false, "fail (not skip) combos whose prereq app is absent from the spec")
+	flagSpec      = flag.String("spec", "specs/providers/lambdatest.json", "provider spec to read endpoints + app ids from")
+	flagLimit     = flag.Int("limit", 0, "cap how many combos to actually RUN (0 = run all; the curated set is small)")
+	flagFull      = flag.Bool("full", false, "run the entire matrix (overrides --limit)")
+	flagPwRunner  = flag.String("pw-runner", "", "path to a node Playwright driver script; if set, host playwright combos run via `node <script> <authfile> <capsJSON>`")
+	flagDry       = flag.Bool("dry", false, "print the generated combos and exit — no smoke, no cloud sessions")
+	flagDuration  = flag.Duration("duration", 0, "drive each session this long with real activity (navigate+screenshot) so artifacts are non-empty; e.g. 3m for a genuine run (0 = create+verify+teardown only)")
+	flagArtifacts = flag.Bool("artifacts", false, "after each run, fetch the artifacts (session video/logs, build artifacts) to confirm the run left evidence — the 'miss is the gold' capture")
 )
+
+// artifactBase is the LT automation API root for artifact fetch (set from spec in main).
+var artifactBase = "https://api.lambdatest.com/automation/api/v1"
 
 func main() {
 	flag.Parse()
@@ -104,6 +108,9 @@ func main() {
 		die("auth: %v", err)
 	}
 	sp := loadSpec(*flagSpec)
+	if a := sp.Endpoints["automation_api"]; a != "" {
+		artifactBase = a
+	}
 
 	combos := matrix(sp)
 	if *flagOnly != "" {
@@ -342,7 +349,53 @@ func runSession(cred httpx.Auth, c combo) (bool, string) {
 	del := httpx.Request{Method: "DELETE", URL: base + "/session/" + sid}
 	cred.Apply(&del)
 	_, _ = httpx.Do(&http.Client{Timeout: 30 * time.Second}, del)
-	return true, "session " + sid + drove
+	art := ""
+	if *flagArtifacts {
+		art = " | " + fetchSessionArtifacts(cred, sid)
+	}
+	return true, "session " + sid + drove + art
+}
+
+// fetchSessionArtifacts confirms the run left evidence: GET the session detail
+// (video) and probe each log type. The miss is the gold — without artifacts the
+// witness cannot verify what happened.
+func fetchSessionArtifacts(cred httpx.Auth, sid string) string {
+	get := func(u string) (int, string) {
+		r := httpx.Request{Method: "GET", URL: u}
+		cred.Apply(&r)
+		resp, err := httpx.Do(&http.Client{Timeout: 30 * time.Second}, r)
+		if err != nil {
+			return 0, err.Error()
+		}
+		return resp.Status, resp.Body
+	}
+	time.Sleep(4 * time.Second) // let artifacts finalize after teardown
+	st, body := get(artifactBase + "/sessions/" + sid)
+	if st != 200 {
+		return fmt.Sprintf("artifacts: session HTTP %d", st)
+	}
+	video := "video=-"
+	if v := jsonStr(body, "video_url"); v != "" || strings.Contains(body, "\"video_url\"") {
+		video = "video=Y"
+	}
+	have := []string{}
+	for _, t := range []string{"network", "console", "command"} {
+		if s, _ := get(artifactBase + "/sessions/" + sid + "/log?type=" + t); s == 200 {
+			have = append(have, t)
+		}
+	}
+	return "artifacts: " + video + " logs=[" + strings.Join(have, ",") + "]"
+}
+
+// fetchBuildArtifacts confirms a framework build's artifacts are present.
+func fetchBuildArtifacts(cred httpx.Auth, buildID string) string {
+	r := httpx.Request{Method: "GET", URL: "https://api.lambdatest.com/api/v1/build/" + buildID + "/artifacts"}
+	cred.Apply(&r)
+	resp, err := httpx.Do(&http.Client{Timeout: 30 * time.Second}, r)
+	if err != nil {
+		return "artifacts: " + err.Error()
+	}
+	return fmt.Sprintf("artifacts: build HTTP %d (%s)", resp.Status, head(resp.Body, 60))
 }
 
 // driveSession keeps a live session busy for dur with real activity so its video,
@@ -412,7 +465,11 @@ func runFramework(cred httpx.Auth, c combo) (bool, string) {
 	// The build is async. We have a buildId (the wire act succeeded). A full
 	// verdict poll needs the build-status endpoint; until that is mapped we
 	// report the accepted submission as success with the id to inspect.
-	return true, "buildId " + bid + " (submitted; verdict via dashboard/build-status)"
+	art := ""
+	if *flagArtifacts {
+		art = " | " + fetchBuildArtifacts(cred, bid)
+	}
+	return true, "buildId " + bid + " (submitted; verdict via dashboard/build-status)" + art
 }
 
 func runPool(cred httpx.Auth, combos []combo, parallel, retries int) []result {
