@@ -26,6 +26,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -56,16 +57,17 @@ const (
 
 // combo is one cell of the matrix. Endpoints/caps mirror specs/providers/lambdatest.json.
 type combo struct {
-	name    string
-	kind    kind
-	url     string            // session: hub /session ; framework: build url ; channel: ws url (caps go in query)
-	body    string            // session/framework request body
-	wsCaps  string            // channel: the capabilities JSON (auth injected below boundary)
-	headers map[string]string // channel: ws upgrade headers (e.g. x-playwright-browser)
-	wsMeth  string            // channel: the command method
-	needApp string            // prereq app key in spec.Framework.Apps (informational / --require-apps)
-	host    bool              // composed by the host runtime (e.g. Playwright driver), NOT a wire channel
-	hostWhy string            // why it is host-only (shown in the report)
+	name         string
+	kind         kind
+	url          string            // session: hub /session ; framework: build url ; channel: ws url (caps go in query)
+	body         string            // session/framework request body
+	wsCaps       string            // channel: the capabilities JSON (auth injected below boundary)
+	headers      map[string]string // channel: ws upgrade headers (e.g. x-playwright-browser)
+	wsMeth       string            // channel: the command method
+	needApp      string            // prereq app key in spec.Framework.Apps (informational / --require-apps)
+	host         bool              // composed by the host runtime (e.g. Playwright driver), NOT a wire channel
+	hostWhy      string            // why it is host-only (shown in the report)
+	hostRunnable bool              // the configured --pw-runner can actually execute this host combo
 }
 
 type result struct {
@@ -84,6 +86,12 @@ var (
 	flagRetries  = flag.Int("retries", 1, "attempts per combo before marking failed (flaky real devices)")
 	flagReqApps  = flag.Bool("require-apps", false, "fail (not skip) combos whose prereq app is absent from the spec")
 	flagSpec     = flag.String("spec", "specs/providers/lambdatest.json", "provider spec to read endpoints + app ids from")
+	flagCatalog  = flag.String("catalog", "specs/providers/lambdatest-catalog.json", "harvested device catalog to generate appium combos from")
+	flagLimit    = flag.Int("limit", 40, "cap how many of the generated combos to actually RUN (0 = run all; the full count is always printed)")
+	flagFull     = flag.Bool("full", false, "run the entire generated matrix (overrides --limit)")
+	flagPerDev   = flag.Int("per-device", 1, "appium versions per device to include (from the catalog, newest first)")
+	flagPwRunner = flag.String("pw-runner", "", "path to a node Playwright driver script; if set, host-only playwright combos actually run via `node <script> <authfile>`")
+	flagDry      = flag.Bool("dry", false, "print the generated combos and exit — no smoke, no cloud sessions")
 )
 
 func main() {
@@ -107,6 +115,28 @@ func main() {
 	}
 	if len(combos) == 0 {
 		die("no combos match --only=%q", *flagOnly)
+	}
+	full := len(combos)
+	limit := *flagLimit
+	if *flagFull {
+		limit = 0
+	}
+	if *flagDry {
+		fmt.Printf("generated %d combos (dry run — nothing executed):\n", full)
+		for _, c := range combos {
+			tag := "wire"
+			if c.host {
+				tag = "host"
+			}
+			fmt.Printf("  [%s] %s\n", tag, c.name)
+		}
+		return
+	}
+	if limit > 0 && full > limit {
+		fmt.Printf("generated %d combos; running %d (--limit %d; --full runs all)\n", full, limit, limit)
+		combos = combos[:limit]
+	} else {
+		fmt.Printf("generated %d combos; running all %d\n", full, full)
 	}
 
 	// Smoke probe: one cheap known-good combo. If the env is broken, say so.
@@ -153,32 +183,58 @@ func matrix(sp spec) []combo {
 	b := *flagBuild
 	var cs []combo
 
-	// selenium: win+mac x browsers x {normal, bidi}
-	for _, s := range []struct{ br, ver, plat string }{
-		{"Chrome", "latest", "Windows 11"}, {"firefox", "latest", "macOS Sonoma"},
-		{"MicrosoftEdge", "latest", "Windows 11"}, {"safari", "latest", "macOS Sonoma"},
-	} {
-		cs = append(cs, combo{name: "selenium-" + low(s.br) + "-normal", kind: session, url: web,
-			body: seleniumCaps(s.br, s.ver, s.plat, false, b, "selenium-"+low(s.br)+"-normal")})
-	}
-	cs = append(cs, combo{name: "selenium-chrome-win11-bidi", kind: session, url: web,
-		body: seleniumCaps("Chrome", "latest", "Windows 11", true, b, "selenium-chrome-bidi")})
+	cat := loadCatalog(*flagCatalog)
 
-	// appium: android+ios x app+web x rd+vd
-	cs = append(cs,
-		combo{name: "appium-android-app-vd", kind: session, url: mob, needApp: "androidVirtual",
-			body: appiumCaps("android", "Galaxy S23", "13", false, "lt://"+id(sp, "androidVirtual"), "", b)},
-		combo{name: "appium-ios-app-vd", kind: session, url: mob, needApp: "iosVirtual",
-			body: appiumCaps("ios", "iPhone 15", "18.0", false, "lt://"+id(sp, "iosVirtual"), "", b)},
-		combo{name: "appium-android-web-vd", kind: session, url: mob,
-			body: appiumCaps("android", "Galaxy S23", "13", false, "", "Chrome", b)},
-		combo{name: "appium-ios-web-vd", kind: session, url: mob,
-			body: appiumCaps("ios", "iPhone 15", "18.0", false, "", "safari", b)},
-		combo{name: "appium-android-web-rd", kind: session, url: mob,
-			body: appiumCaps("android", "Galaxy S23", "14", true, "", "Chrome", b)},
-		combo{name: "appium-ios-web-rd", kind: session, url: mob,
-			body: appiumCaps("ios", "iPhone 14", "18", true, "", "safari", b)},
-	)
+	// selenium: browser x version x platform x {normal, bidi} — the desktop-web axes.
+	browsers := []struct {
+		br    string
+		plats []string
+	}{
+		{"Chrome", []string{"Windows 11", "Windows 10", "macOS Sonoma"}},
+		{"firefox", []string{"Windows 11", "Windows 10", "macOS Sonoma"}},
+		{"MicrosoftEdge", []string{"Windows 11", "Windows 10"}},
+		{"safari", []string{"macOS Sonoma", "macOS Ventura"}},
+	}
+	for _, bb := range browsers {
+		for _, pl := range bb.plats {
+			for _, v := range []string{"latest", "latest-1"} {
+				for _, mode := range []string{"normal", "bidi"} {
+					bidi := mode == "bidi"
+					if bidi && bb.br == "safari" {
+						continue // safari has no stable BiDi on the grid
+					}
+					nm := fmt.Sprintf("selenium-%s-%s-%s-%s", low(bb.br), slug(pl), slug(v), mode)
+					cs = append(cs, combo{name: nm, kind: session, url: web,
+						body: seleniumCaps(bb.br, v, pl, bidi, b, nm)})
+				}
+			}
+		}
+	}
+
+	// appium: pool x platform x device(from catalog) x {app, web}. This is where the
+	// matrix gets big — every device the catalog lists, both pools, both surfaces.
+	addAppium := func(pool, plat string, devices map[string][]string, real bool, app string) {
+		br := "Chrome"
+		if plat == "ios" {
+			br = "safari"
+		}
+		for _, d := range topDevices(devices, *flagPerDev) {
+			if app != "" { // app-on-device (VD: we have emulator/simulator apps)
+				cs = append(cs, combo{name: fmt.Sprintf("appium-%s-app-%s-%s-%s", plat, pool, slug(d.name), slug(d.ver)),
+					kind: session, url: mob, needApp: app,
+					body: appiumCaps(plat, d.name, d.ver, real, "lt://"+id(sp, app), "", b)})
+			}
+			cs = append(cs, combo{name: fmt.Sprintf("appium-%s-web-%s-%s-%s", plat, pool, slug(d.name), slug(d.ver)),
+				kind: session, url: mob,
+				body: appiumCaps(plat, d.name, d.ver, real, "", br, b)})
+		}
+	}
+	addAppium("vd", "android", cat("vd", "app", "android"), false, "androidVirtual")
+	addAppium("vd", "ios", cat("vd", "app", "ios"), false, "iosVirtual")
+	addAppium("vd", "android", cat("vd", "web", "android"), false, "")
+	addAppium("vd", "ios", cat("vd", "web", "ios"), false, "")
+	addAppium("rd", "android", cat("rd", "android"), true, "") // RD web (RD app needs an RD-uploaded apk; not in inventory)
+	addAppium("rd", "ios", cat("rd", "ios"), true, "")
 
 	// puppeteer: raw CDP channel (no upgrade header)
 	cs = append(cs, combo{name: "puppeteer-chrome-cdp", kind: channel,
@@ -189,10 +245,11 @@ func matrix(sp spec) []combo {
 	// Playwright's driver process for the handshake) — a raw wsx upgrade 400s. The
 	// x-playwright-browser header is necessary-not-sufficient; the driver does the rest.
 	// Composed by the host runtime (8/pilot), not the wire. Not gated.
-	for _, pw := range []string{"playwright-chrome-desktop-web", "playwright-chrome-rd-web"} {
-		cs = append(cs, combo{name: pw, host: true,
-			hostWhy: "driver-mediated (/playwright) — composed by the Playwright runtime in 8/pilot, not a raw channel"})
-	}
+	cs = append(cs,
+		combo{name: "playwright-chrome-desktop-web", host: true, hostRunnable: true,
+			hostWhy: "driver-mediated (/playwright) — Playwright runtime; --pw-runner executes it via the host driver"},
+		combo{name: "playwright-chrome-rd-web", host: true,
+			hostWhy: "driver-mediated, real-device playwright caps — host runtime (runner caps a follow-up)"})
 
 	// espresso (rd) + xcui (vd) framework builds
 	if a, t := id(sp, "espressoMyApp"), id(sp, "espressoMyTestApp"); a != "" && t != "" {
@@ -212,7 +269,19 @@ func matrix(sp spec) []combo {
 
 func run(cred httpx.Auth, c combo, attempts int) result {
 	if c.host {
-		// host-only (e.g. Playwright driver): not a wire channel — report, don't run, don't gate.
+		// host-only (e.g. Playwright driver): not a wire channel. If a --pw-runner
+		// is configured and this combo is runnable by it, the HOST composes it via
+		// the Playwright driver (node). The runner reads the gitignored auth file
+		// itself — the secret stays below the boundary, never an arg or a log.
+		if c.hostRunnable && *flagPwRunner != "" {
+			start := time.Now()
+			authFile := "auth/" + strings.ReplaceAll(*flagProfile, ":", "-") + ".json"
+			out, err := exec.Command("node", *flagPwRunner, authFile).CombinedOutput()
+			if err != nil {
+				return result{name: c.name, ok: false, detail: "host pw-runner: " + head(string(out), 120), dur: time.Since(start)}
+			}
+			return result{name: c.name, ok: true, detail: "host-driver: " + head(string(out), 110), dur: time.Since(start)}
+		}
 		return result{name: c.name, host: true, detail: c.hostWhy}
 	}
 	start := time.Now()
@@ -401,6 +470,92 @@ func frameworkBody(app, suite, device string, virtual bool, build string) string
 	}
 	b, _ := json.Marshal(m)
 	return string(b)
+}
+
+// --- catalog (device matrix generation) ---
+
+// loadCatalog parses the harvested device catalog and returns a getter:
+//
+//	cat("vd","app","android")  or  cat("rd","ios")  ->  {deviceName: [versions]}
+func loadCatalog(path string) func(...string) map[string][]string {
+	b, err := os.ReadFile(path)
+	if err != nil {
+		b, err = os.ReadFile(filepath.Join("..", "..", path))
+	}
+	root := map[string]any{}
+	if err == nil {
+		_ = json.Unmarshal(b, &root)
+	}
+	pools, _ := root["pools"].(map[string]any)
+	return func(p ...string) map[string][]string {
+		var cur any = pools
+		for _, k := range p {
+			m, ok := cur.(map[string]any)
+			if !ok {
+				return nil
+			}
+			cur = m[k]
+		}
+		m, ok := cur.(map[string]any)
+		if !ok {
+			return nil
+		}
+		out := map[string][]string{}
+		for name, v := range m {
+			arr, ok := v.([]any)
+			if !ok {
+				continue
+			}
+			var vs []string
+			for _, x := range arr {
+				if s, ok := x.(string); ok {
+					vs = append(vs, s)
+				}
+			}
+			out[name] = vs
+		}
+		return out
+	}
+}
+
+type dvc struct{ name, ver string }
+
+// topDevices returns devices sorted by name, each with up to perDev newest-first versions.
+func topDevices(m map[string][]string, perDev int) []dvc {
+	if perDev < 1 {
+		perDev = 1
+	}
+	names := make([]string, 0, len(m))
+	for n := range m {
+		names = append(names, n)
+	}
+	sort.Strings(names)
+	var out []dvc
+	for _, n := range names {
+		vs := append([]string(nil), m[n]...)
+		sort.Sort(sort.Reverse(sort.StringSlice(vs)))
+		for i := 0; i < perDev && i < len(vs); i++ {
+			out = append(out, dvc{n, vs[i]})
+		}
+	}
+	return out
+}
+
+// slug makes a combo-name-safe token from a device/platform/version string.
+func slug(s string) string {
+	s = strings.ToLower(strings.TrimSpace(s))
+	var bld strings.Builder
+	prevDash := false
+	for _, r := range s {
+		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') {
+			bld.WriteRune(r)
+			prevDash = false
+		} else if !prevDash {
+			bld.WriteByte('-')
+			prevDash = true
+		}
+	}
+	return strings.Trim(bld.String(), "-")
 }
 
 // --- spec + json helpers ---
