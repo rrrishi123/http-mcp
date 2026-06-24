@@ -1,0 +1,312 @@
+{
+ "source": "npm:@wdio/protocols/webdriver",
+ "version": "9.29.0",
+ "fetched": "2026-06-24",
+ "count": 76,
+ "routes": [
+  {
+   "method": "DELETE",
+   "path": "/session/:sessionId"
+  },
+  {
+   "method": "DELETE",
+   "path": "/session/:sessionId/actions"
+  },
+  {
+   "method": "DELETE",
+   "path": "/session/:sessionId/cookie"
+  },
+  {
+   "method": "DELETE",
+   "path": "/session/:sessionId/cookie/:name"
+  },
+  {
+   "method": "DELETE",
+   "path": "/session/:sessionId/sensor/:type"
+  },
+  {
+   "method": "DELETE",
+   "path": "/session/:sessionId/webauthn/authenticator/:authenticatorId"
+  },
+  {
+   "method": "DELETE",
+   "path": "/session/:sessionId/webauthn/authenticator/:authenticatorId/credentials"
+  },
+  {
+   "method": "DELETE",
+   "path": "/session/:sessionId/webauthn/authenticator/:authenticatorId/credentials/:credentialId"
+  },
+  {
+   "method": "DELETE",
+   "path": "/session/:sessionId/window"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/alert/text"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/cookie"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/cookie/:name"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/element/:elementId/attribute/:name"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/element/:elementId/computedlabel"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/element/:elementId/computedrole"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/element/:elementId/css/:propertyName"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/element/:elementId/displayed"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/element/:elementId/enabled"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/element/:elementId/name"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/element/:elementId/property/:name"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/element/:elementId/rect"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/element/:elementId/screenshot"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/element/:elementId/selected"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/element/:elementId/shadow"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/element/:elementId/text"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/element/active"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/screenshot"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/sensor/:type"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/source"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/timeouts"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/title"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/url"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/webauthn/authenticator/:authenticatorId/credentials"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/window"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/window/handles"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/window/rect"
+  },
+  {
+   "method": "GET",
+   "path": "/status"
+  },
+  {
+   "method": "POST",
+   "path": "/session"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/actions"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/alert/accept"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/alert/dismiss"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/alert/text"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/back"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/cookie"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/element"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/element/:elementId/clear"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/element/:elementId/click"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/element/:elementId/element"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/element/:elementId/elements"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/element/:elementId/value"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/elements"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/execute/async"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/execute/sync"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/forward"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/frame"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/frame/parent"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/permissions"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/print"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/refresh"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/reporting/generate_test_report"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/sensor"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/sensor/:type"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/shadow/:shadowId/element"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/shadow/:shadowId/elements"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/time_zone"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/timeouts"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/url"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/webauthn/authenticator"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/webauthn/authenticator/:authenticatorId/credential"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/webauthn/authenticator/:authenticatorId/uv"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/window"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/window/fullscreen"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/window/maximize"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/window/minimize"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/window/new"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/window/rect"
+  }
+ ]
+}
