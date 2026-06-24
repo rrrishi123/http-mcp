@@ -141,6 +141,7 @@ func (s *server) tools() []any {
 					"method":     str("Command method, e.g. browsingContext.getTree (BiDi) or Page.navigate (CDP)."),
 					"params":     map[string]any{"type": "object", "description": "Command params object (defaults to {})."},
 					"id":         map[string]any{"type": "integer", "description": "Command id to match the response against (default 1)."},
+					"headers":    map[string]any{"type": "object", "description": "Optional WS upgrade headers (name -> value). For channels that gate the handshake — e.g. LambdaTest /playwright needs {\"x-playwright-browser\":\"chromium\"} or the upgrade 400s. Host/Upgrade/Connection/Sec-WebSocket-* are reserved.", "additionalProperties": map[string]any{"type": "string"}},
 					"timeout_ms": map[string]any{"type": "integer", "description": "Give up waiting for the response after this many ms (default 30000)."},
 					"auth":       map[string]any{"type": "object", "description": "Optional. {profile:\"name\"} resolves a credential BELOW the boundary and injects it into the channel handshake — LambdaTest ?capabilities= (LT:Options.user/accessKey) or URL userinfo. The secret never appears in ws_url or logs."},
 				},
@@ -219,7 +220,17 @@ func (s *server) bidiCommand(args map[string]any) any {
 	if dialTimeout < 10*time.Second {
 		dialTimeout = 10 * time.Second
 	}
-	conn, err := wsx.Dial(wsURL, dialTimeout)
+	// Optional upgrade headers: some channels gate the WS handshake on a header
+	// (LambdaTest /playwright wants x-playwright-browser, else 400). Generic WS
+	// upgrade headers — not a per-provider tool.
+	var hdrs map[string]string
+	if h, ok := args["headers"].(map[string]any); ok {
+		hdrs = map[string]string{}
+		for k, v := range h {
+			hdrs[k] = str(v)
+		}
+	}
+	conn, err := wsx.DialWithHeaders(wsURL, dialTimeout, hdrs)
 	if err != nil {
 		return toolErr("bidi dial: " + redact(err.Error()))
 	}

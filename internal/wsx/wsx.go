@@ -55,7 +55,17 @@ func (c *Conn) write(b []byte) error {
 
 // Dial opens ws:// or wss:// and completes the upgrade handshake. The returned
 // Conn is ready to WriteText/ReadText. timeout bounds the dial + handshake.
+// Dial opens a WebSocket with the standard handshake (no extra headers).
 func Dial(rawURL string, timeout time.Duration) (*Conn, error) {
+	return DialWithHeaders(rawURL, timeout, nil)
+}
+
+// DialWithHeaders opens a WebSocket, adding caller-supplied request headers to
+// the opening handshake. Some channels gate the UPGRADE itself on a header
+// (e.g. LambdaTest /playwright wants x-playwright-browser, else 400) — these are
+// normal WS upgrade headers, not protocol; wsx stays a generic channel atom. The
+// headers wsx owns (Host/Upgrade/Connection/Sec-WebSocket-*) cannot be overridden.
+func DialWithHeaders(rawURL string, timeout time.Duration, headers map[string]string) (*Conn, error) {
 	u, err := url.Parse(rawURL)
 	if err != nil {
 		return nil, err
@@ -94,12 +104,21 @@ func Dial(rawURL string, timeout time.Duration) (*Conn, error) {
 	if path == "" {
 		path = "/"
 	}
+	var extra strings.Builder
+	for k, v := range headers {
+		switch strings.ToLower(strings.TrimSpace(k)) {
+		case "host", "upgrade", "connection", "sec-websocket-key", "sec-websocket-version":
+			continue // wsx owns these; never let a caller forge the handshake
+		}
+		extra.WriteString(k + ": " + v + "\r\n")
+	}
 	req := "GET " + path + " HTTP/1.1\r\n" +
 		"Host: " + u.Host + "\r\n" +
 		"Upgrade: websocket\r\n" +
 		"Connection: Upgrade\r\n" +
 		"Sec-WebSocket-Key: " + key + "\r\n" +
-		"Sec-WebSocket-Version: 13\r\n\r\n"
+		"Sec-WebSocket-Version: 13\r\n" +
+		extra.String() + "\r\n"
 	if _, err := raw.Write([]byte(req)); err != nil {
 		raw.Close()
 		return nil, err
