@@ -52,7 +52,7 @@
 <div class="wrap">
   <div class="kicker">http-mcp · the wire</div>
   <h1>A call. A <em>channel</em>.</h1>
-  <p class="sub">Two physics, not one. Don't read the difference — fire it, and watch the shapes diverge.</p>
+  <p class="sub">Two transport models for the same operations — a request/response <b>call</b> (HTTP) and a held duplex <b>channel</b> (WebSocket). Run each below and compare them on the wire.</p>
 
   <div class="stage"><canvas id="c" width="1760" height="900"></canvas></div>
 
@@ -63,19 +63,19 @@
   </div>
 
   <div class="legend">
-    <span><span class="dot" style="background:var(--call)"></span><b>request → response</b> · a call: you ask once, one answer, then silence</span>
+    <span><span class="dot" style="background:var(--call)"></span><b>request → response</b> · one round trip, then the connection closes</span>
     <span><span class="dot" style="background:var(--chan)"></span><b>command ⇄ reply</b> · matched by id on the held line</span>
-    <span><span class="dot" style="background:var(--gold)"></span><b>event</b> · arrives unbidden — the afferent half</span>
+    <span><span class="dot" style="background:var(--gold)"></span><b>event</b> · pushed by the server, not requested</span>
   </div>
 
   <div class="twocol">
     <div>
       <h3>a call</h3>
-      <p>Request, response, done. The socket opens for one round trip and closes. State lives nowhere between calls — <code>POST /session</code>, an answer, gone. Fire ten; each is alone.</p>
+      <p>Request/response over a short-lived connection. Each call is independent; no state persists between calls. Example: <code>POST /session</code> returns a session id, then the connection closes.</p>
     </div>
     <div>
       <h3>a channel</h3>
-      <p>One socket, held open. You send commands and a reply comes back matched by <code>id</code> — but events arrive on their own, unasked. Close it and every subscription, every <code>sessionId</code>, dies with the line.</p>
+      <p>One WebSocket held open. Commands are matched to replies by <code>id</code>; the server also pushes events that were not requested. Closing the socket drops every subscription and the <code>sessionId</code>.</p>
     </div>
   </div>
 
@@ -94,8 +94,8 @@
     .layerlist li > span:last-child { flex:1; min-width:240px; }
   </style>
   <div class="loop">
-    <h3>The loop — tangents, not sides</h3>
-    <p class="sub2">A call and a channel aren't a table with sides; they're a circle — efferent out, afferent back, again. You hold the <b>tangents</b>: what is sent, and the rate it's sensed. Five layers ride that loop — only some can be captured on the wire.</p>
+    <h3>Latency layers (L1–L5)</h3>
+    <p class="sub2">Acting and perceiving over the wire decomposes into five layers. Only L3–L4 are observable on the wire; L1–L2 sit in the model and its transport, L5 in the target. End-to-end latency is dominated by L1: model inference is <b>84–98% of agent latency</b> in measured systems (<a href="https://arxiv.org/pdf/2506.16042">OSWorld-Human</a>); the wire itself (L3–L4) is sub-ms to tens of ms.</p>
     <ul class="layerlist">
       <li><b>L1 · cognition</b><span class="cap no">not on the wire</span><span>the model deciding to act — 0.5–5 s, the ceiling. Only a model produces it; Go cannot.</span></li>
       <li><b>L2 · MCP transduction</b><span class="cap part">stdio, not wire</span><span>model → JSON-RPC → server, ~100 µs. Captured only by speaking stdio to http-mcp.</span></li>
@@ -223,7 +223,7 @@ function drawWire(y, kind, open, color, title, lLabel, rLabel){
     ctx.fillStyle=C.dim; ctx.fillText('socket closed — subscriptions & sessionId gone', Lx, y+52);
   } else {
     ctx.fillStyle=color; ctx.globalAlpha=.7;
-    ctx.fillText('held open — events arrive unbidden', Lx, y+52); ctx.globalAlpha=1;
+    ctx.fillText('held open — server pushes events', Lx, y+52); ctx.globalAlpha=1;
   }
 }
 
