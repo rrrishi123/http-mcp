@@ -129,6 +129,44 @@
     }
   },
 
+  "framework_family": {
+    "_doc": "the native-suite (CALL) family, mapped from QA-sanctum runFramework2.py + run-verified. http-mcp stays 3 tools; this is DATA a host runner expands into http_request POSTs with auth:{profile}. One endpoint family, four types, RD/VD selected by a payload flag.",
+    "host_by_env": {
+      "prod": "https://mobile-api.lambdatest.com/framework",
+      "stage": "https://stage-beta-api.lambdatestinternal.com/framework",
+      "gdprStage": "https://stage-beta-api.lambdatestinternal.com/framework",
+      "dev_<name>": "https://beta-api-<name>-dev.lambdatestinternal.com/framework"
+    },
+    "types": {
+      "espresso": "/v1/espresso/build  (Android instrumented)",
+      "xcui": "/v1/xcui/build  (iOS)",
+      "flutterAndroid": "/v1/flutter/build",
+      "flutterIos": "/v1/flutter/ios/build"
+    },
+    "rd_vd_switch": "isVirtualDevice:true in the payload selects the VIRTUAL cloud (emulator/simulator); absent/false = real device. SAME endpoint either way — the RD/VD bifurcation is a flag, not a separate API. Upload differs: RD via manual-api/app/uploadFramework, VD via manual-api/app/upload/virtualDevice (type emulator|simulator).",
+    "payload_schema": {
+      "required": ["app (lt://...)", "testSuite (lt://...)", "device (array)", "build (name)"],
+      "common": {"video": true, "queueTimeout": 600, "idleTimeout": 600, "deviceLog": true, "network": true},
+      "device": "[\"{name}\"] * parallel_builds — same device name repeated per parallel count; platformVersion is a SEPARATE key (not name-suffixed in this script, though the doc curl uses name-version)",
+      "optional": ["isVirtualDevice", "platformVersion", "minorOsVersion", "minorOsVersionEnabled", "privateCloud", "fixedIP (=udid)", "testTimeout", "mitmProxy", "network.har", "tunnel + tunnelIdentifier", "location{lat,long}", "smartUI.project", "smartUI.build", "smartUI.cropNavigationBar", "smartUI.cropStatusBar", "only-testing[]", "<caps key=value>"]
+    },
+    "app_inventory_prod_adminltqa": {
+      "_note": "lt:// app references only — credentials live in the gitignored upload-response JSON / env, never here.",
+      "espressoMyApp": "lt://APP1016062831782302928082971  (espresso-android, RD)",
+      "espressoMyTestApp": "lt://APP1016044271782302930059141  (espresso-android, RD)",
+      "ProverbialApp": "lt://APP1016044271782302934024994  (iOS simulator, VD)",
+      "ProverbialTestApp": "lt://APP1016048611782302931930633  (iOS simulator, VD)",
+      "androidVirtual": "lt://APP1016048611782302936197161  (Android emulator, VD)",
+      "iosVirtual": "lt://APP10160461961782302936818690  (iOS simulator, VD)"
+    },
+    "verified_runs": {
+      "espresso-rd": "PASSED buildId 22983015 — [Galaxy S23-13], 4 sessions, 1m13s, appautomation dashboard",
+      "xcui-vd": "RUNNABLE now: ProverbialApp + ProverbialTestApp, isVirtualDevice:true, /v1/xcui/build, an iOS simulator device — pending run",
+      "espresso-vd": "NOT runnable with current apps: androidVirtual exists but has no paired emulator test suite",
+      "flutter": "endpoints mapped; no flutter apps uploaded for adminltqa"
+    }
+  },
+
   "x_axes": {
     "browser": ["Chrome", "Firefox", "MicrosoftEdge", "Safari", "pw-chromium", "pw-firefox", "pw-webkit"],
     "version": ["latest", "latest-1", "latest-2"],
