@@ -79,8 +79,31 @@
     </div>
   </div>
 
-  <p class="foot">Two physics — a call, a channel — and no third smuggled in. ·
-    inspired by <a href="https://chenglou.me/pretext/">pretext</a> — experienced, not narrated.</p>
+  <style>
+    .loop { margin-top: 54px; }
+    .loop h3 { font:400 22px/1.1 Georgia,serif; margin:0 0 6px; }
+    .loop .sub2 { color:var(--dim); max-width:64ch; font-size:15px; margin:0 0 18px; line-height:1.6; }
+    .loop .sub2 b { color:var(--ink); }
+    .layerlist { list-style:none; margin:0; padding:0; }
+    .layerlist li { padding:9px 0; border-top:1px solid var(--line); color:var(--dim); font-size:14px; display:flex; gap:12px; align-items:baseline; flex-wrap:wrap; }
+    .layerlist b { color:var(--ink); width:182px; flex:none; }
+    .cap { font:600 11px ui-monospace,monospace; padding:1px 7px; border-radius:3px; letter-spacing:.03em; flex:none; width:130px; text-align:center; }
+    .cap.yes { color:#8fbf6f; border:1px solid #3a5a30; }
+    .cap.part{ color:#d8a657; border:1px solid #5a4a25; }
+    .cap.no  { color:#746f67; border:1px solid #36343f; }
+    .layerlist li > span:last-child { flex:1; min-width:240px; }
+  </style>
+  <div class="loop">
+    <h3>The loop — tangents, not sides</h3>
+    <p class="sub2">A call and a channel aren't a table with sides; they're a circle — efferent out, afferent back, again. You hold the <b>tangents</b>: what is sent, and the rate it's sensed. Five layers ride that loop — only some can be captured on the wire.</p>
+    <ul class="layerlist">
+      <li><b>L1 · cognition</b><span class="cap no">not on the wire</span><span>the model deciding to act — 0.5–5 s, the ceiling. Only a model produces it; Go cannot.</span></li>
+      <li><b>L2 · MCP transduction</b><span class="cap part">stdio, not wire</span><span>model → JSON-RPC → server, ~100 µs. Captured only by speaking stdio to http-mcp.</span></li>
+      <li><b>L3 · broker queueing</b><span class="cap yes">captured by 8</span><span>the held socket, one owner — contention (head-of-line) shows here.</span></li>
+      <li><b>L4 · wire physics</b><span class="cap yes">captured by 8</span><span>the CALL (HTTP) or CHANNEL (ws) op itself — the dots above.</span></li>
+      <li><b>L5 · target render / OS</b><span class="cap part">seen, not read</span><span>browser compositing / device framebuffer. "Is it red?" is pixels only.</span></li>
+    </ul>
+  </div>
 </div>
 
 <script>
