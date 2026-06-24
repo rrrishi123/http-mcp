@@ -1,0 +1,79 @@
+{
+  "provider": "lambdatest",
+  "aka": ["testmuai"],
+  "_doc": "The provider/framework matrix as DATA — the api-doc->http-mcp mapping, not code. A host runner expands x_axes x frameworks into wire calls: physics picks the tool (http_request | bidi_command), endpoint+caps_template build the target, inject_auth says where the resolved profile credential goes BELOW the boundary. http-mcp stays 3 tools; this is specs/ data, the same discipline as the route priors. Verified live on 2026-06-24 via http_request/bidi_command + auth profile prod:adminltqa.",
+
+  "auth": {
+    "kind": "basic",
+    "resolve": "auth profile (env LT_USERNAME/LT_ACCESS_KEY or gitignored auth/<profile>.json) — the secret never crosses the agent boundary",
+    "inject_auth_shapes": {
+      "basic_header": "WebDriver/Appium/HyperExecute over HTTP — Authorization: Basic base64(user:key)",
+      "caps_url": "CDP/Puppeteer ws — user/accessKey injected into LT:Options inside ?capabilities=<urlencoded json>",
+      "url_userinfo": "wss://user:key@host/... — generic ws Basic fallback"
+    }
+  },
+
+  "endpoints": {
+    "web_hub": "https://hub.lambdatest.com/wd/hub",
+    "mobile_hub": "https://mobile-hub.lambdatest.com/wd/hub",
+    "cdp": "wss://cdp.lambdatest.com",
+    "hyperexecute": "https://api.hyperexecute.cloud",
+    "automation_api": "https://api.lambdatest.com/automation/api/v1",
+    "apps_api": "https://manual-api.lambdatest.com/app/data"
+  },
+
+  "frameworks": {
+    "selenium": {
+      "physics": "call", "tool": "http_request", "endpoint": "web_hub", "inject_auth": "basic_header",
+      "create": "POST /session",
+      "caps_template": {"browserName": "{browser}", "browserVersion": "{version}", "LT:Options": {"platformName": "{platform}", "w3c": true, "video": true}},
+      "verified": "matrix-selenium-{chrome-win11, firefox-win10, edge-win11, chrome-macos} — passed"
+    },
+    "selenium-bidi": {
+      "physics": "call+channel", "tool": "http_request + bidi_command", "endpoint": "web_hub", "inject_auth": "basic_header",
+      "caps_template": {"browserName": "{browser}", "browserVersion": "{version}", "LT:Options": {"platformName": "{platform}", "w3c": true}, "webSocketUrl": true},
+      "note": "session created over HTTP (CALL); webSocketUrl:true returns a BiDi ws (CHANNEL) for bidi_command. se:cdp gives raw CDP on the same session."
+    },
+    "appium": {
+      "physics": "call", "tool": "http_request", "endpoint": "mobile_hub", "inject_auth": "basic_header",
+      "create": "POST /session",
+      "caps_template": {"platformName": "{platform}", "appium:deviceName": "{device}", "appium:platformVersion": "{mobile_version}", "appium:isRealMobile": "{rd_vd}", "appium:app": "lt://{app_id}", "LT:Options": {"w3c": true, "video": true}},
+      "prereq": "app uploaded -> lt://<app_id> (GET apps_api?type=android|ios)",
+      "x_axes": {"rd_vd": [true, false]},
+      "verified": "wire-CALL-appium-vd-validate — apk_arena (com.example.apk_arena) on Galaxy S22 emulator, passed"
+    },
+    "puppeteer": {
+      "physics": "channel", "tool": "bidi_command", "endpoint": "cdp", "inject_auth": "caps_url",
+      "connect": "wss://cdp.lambdatest.com/puppeteer?capabilities=<urlencoded caps>",
+      "caps_template": {"browserName": "{browser}", "browserVersion": "{version}", "LT:Options": {"platform": "{platform}"}},
+      "note": "raw CDP — bidi_command drives it; timeout_ms >= 60000 for cold-start.",
+      "verified": "wire-CHANNEL-cdp-validate — Browser.getVersion -> Chrome/149, completed"
+    },
+    "playwright": {
+      "physics": "channel", "tool": "host-adapter", "endpoint": "cdp", "inject_auth": "caps_url",
+      "connect": "wss://cdp.lambdatest.com/playwright?capabilities=<urlencoded caps>",
+      "browsers": ["pw-chromium", "pw-firefox", "pw-webkit", "Chrome", "MicrosoftEdge"],
+      "note": "CATCH: /playwright speaks Playwright's OWN protocol (a CDP superset), NOT raw CDP. bidi_command cannot drive it — a host-side Playwright client (8/pilot) must. For the raw-CDP path use the puppeteer entry."
+    },
+    "cypress": {
+      "physics": "call", "tool": "http_request", "endpoint": "hyperexecute", "inject_auth": "basic_header",
+      "note": "job submission — POST a HyperExecute YAML + repo, poll for results. Not a live remote-control."
+    },
+    "xcuitest": {
+      "physics": "call", "tool": "http_request", "endpoint": "mobile_hub",
+      "note": "native iOS — driven via WDA over HTTP (a CALL), or a native test job on HyperExecute."
+    },
+    "espresso": {
+      "physics": "call", "tool": "http_request", "endpoint": "hyperexecute",
+      "note": "native Android — submitted as a test job (a CALL)."
+    }
+  },
+
+  "x_axes": {
+    "browser": ["Chrome", "Firefox", "MicrosoftEdge", "Safari", "pw-chromium", "pw-firefox", "pw-webkit"],
+    "version": ["latest", "latest-1", "latest-2"],
+    "platform": ["Windows 11", "Windows 10", "macOS Sonoma", "macOS Ventura"],
+    "device": ["Pixel 8", "Galaxy S23", "iPhone 15", "iPhone 14"],
+    "mobile_version": ["14", "13", "17", "16"]
+  }
+}
