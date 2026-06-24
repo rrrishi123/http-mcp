@@ -191,7 +191,13 @@ func (s *server) bidiCommand(args map[string]any) any {
 		cmd["params"] = p
 	}
 
-	conn, err := wsx.Dial(wsURL, 10*time.Second)
+	// Dial timeout honors timeout_ms too: cloud channels (LambdaTest CDP) cold-start
+	// a browser on connect and can take tens of seconds to complete the handshake.
+	dialTimeout := timeout
+	if dialTimeout < 10*time.Second {
+		dialTimeout = 10 * time.Second
+	}
+	conn, err := wsx.Dial(wsURL, dialTimeout)
 	if err != nil {
 		return toolErr("bidi dial: " + err.Error())
 	}
