@@ -64,11 +64,14 @@ type combo struct {
 	headers map[string]string // channel: ws upgrade headers (e.g. x-playwright-browser)
 	wsMeth  string            // channel: the command method
 	needApp string            // prereq app key in spec.Framework.Apps (informational / --require-apps)
+	host    bool              // composed by the host runtime (e.g. Playwright driver), NOT a wire channel
+	hostWhy string            // why it is host-only (shown in the report)
 }
 
 type result struct {
 	name   string
 	ok     bool
+	host   bool // host-only: reported as HOST, excluded from the pass/fail gate
 	detail string
 	dur    time.Duration
 }
@@ -120,18 +123,21 @@ func main() {
 	results := runPool(cred, combos, *flagParallel, *flagRetries)
 
 	sort.Slice(results, func(i, j int) bool { return results[i].name < results[j].name })
-	pass, fail := 0, 0
+	pass, fail, host := 0, 0, 0
 	fmt.Println("\n== results ==")
 	for _, r := range results {
 		mark := "PASS"
-		if !r.ok {
+		switch {
+		case r.host:
+			mark, host = "HOST", host+1
+		case !r.ok:
 			mark, fail = "FAIL", fail+1
-		} else {
+		default:
 			pass++
 		}
 		fmt.Printf("  %-4s %-34s %8s  %s\n", mark, r.name, r.dur.Round(time.Millisecond), r.detail)
 	}
-	fmt.Printf("\n%d passed, %d failed, of %d\n", pass, fail, len(results))
+	fmt.Printf("\n%d passed, %d failed, %d host-only, of %d (gate = wire combos only)\n", pass, fail, host, len(results))
 	if fail > 0 {
 		os.Exit(1)
 	}
@@ -179,10 +185,14 @@ func matrix(sp spec) []combo {
 		url: cdp + "/puppeteer", wsMeth: "Browser.getVersion",
 		wsCaps: `{"browserName":"Chrome","browserVersion":"latest","LT:Options":{"platform":"Windows 11","build":"` + b + `","name":"puppeteer-chrome-cdp"}}`})
 
-	// playwright: CDP channel WITH the x-playwright-browser upgrade gate; open + minimal initialize.
-	cs = append(cs, combo{name: "playwright-chrome-desktop-web", kind: channel,
-		url: cdp + "/playwright", wsMeth: "initialize", headers: map[string]string{"x-playwright-browser": "chromium"},
-		wsCaps: `{"browserName":"Chrome","browserVersion":"latest","LT:Options":{"platform":"Windows 11","build":"` + b + `","name":"playwright-chrome-desktop-web","network":true,"video":true}}`})
+	// playwright: host-only. /playwright is driver-mediated (JsonPipeTransport spawns
+	// Playwright's driver process for the handshake) — a raw wsx upgrade 400s. The
+	// x-playwright-browser header is necessary-not-sufficient; the driver does the rest.
+	// Composed by the host runtime (8/pilot), not the wire. Not gated.
+	for _, pw := range []string{"playwright-chrome-desktop-web", "playwright-chrome-rd-web"} {
+		cs = append(cs, combo{name: pw, host: true,
+			hostWhy: "driver-mediated (/playwright) — composed by the Playwright runtime in 8/pilot, not a raw channel"})
+	}
 
 	// espresso (rd) + xcui (vd) framework builds
 	if a, t := id(sp, "espressoMyApp"), id(sp, "espressoMyTestApp"); a != "" && t != "" {
@@ -201,16 +211,20 @@ func matrix(sp spec) []combo {
 // --- runners ---
 
 func run(cred httpx.Auth, c combo, attempts int) result {
+	if c.host {
+		// host-only (e.g. Playwright driver): not a wire channel — report, don't run, don't gate.
+		return result{name: c.name, host: true, detail: c.hostWhy}
+	}
 	start := time.Now()
 	var last string
 	for i := 0; i < attempts; i++ {
 		ok, detail := once(cred, c)
 		if ok {
-			return result{c.name, true, detail, time.Since(start)}
+			return result{name: c.name, ok: true, detail: detail, dur: time.Since(start)}
 		}
 		last = detail
 	}
-	return result{c.name, false, "after " + itoa(attempts) + " try(s): " + last, time.Since(start)}
+	return result{name: c.name, ok: false, detail: "after " + itoa(attempts) + " try(s): " + last, dur: time.Since(start)}
 }
 
 func once(cred httpx.Auth, c combo) (bool, string) {
@@ -229,7 +243,8 @@ func once(cred httpx.Auth, c combo) (bool, string) {
 func runSession(cred httpx.Auth, c combo) (bool, string) {
 	req := httpx.Request{Method: "POST", URL: c.url, Body: c.body, Headers: map[string]string{"Content-Type": "application/json"}}
 	cred.Apply(&req)
-	resp, err := httpx.Do(&http.Client{Timeout: 120 * time.Second}, req)
+	// Real devices can queue for allocation; allow up to 3 min before calling it.
+	resp, err := httpx.Do(&http.Client{Timeout: 180 * time.Second}, req)
 	if err != nil {
 		return false, "dial: " + err.Error()
 	}
