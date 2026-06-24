@@ -93,6 +93,7 @@ var (
 	flagFull     = flag.Bool("full", false, "run the entire matrix (overrides --limit)")
 	flagPwRunner = flag.String("pw-runner", "", "path to a node Playwright driver script; if set, host playwright combos run via `node <script> <authfile> <capsJSON>`")
 	flagDry      = flag.Bool("dry", false, "print the generated combos and exit — no smoke, no cloud sessions")
+	flagDuration = flag.Duration("duration", 0, "drive each session this long with real activity (navigate+screenshot) so artifacts are non-empty; e.g. 3m for a genuine run (0 = create+verify+teardown only)")
 )
 
 func main() {
@@ -331,11 +332,42 @@ func runSession(cred httpx.Auth, c combo) (bool, string) {
 	if sid == "" {
 		return false, "no sessionId: " + head(resp.Body, 120)
 	}
+	base := strings.TrimSuffix(c.url, "/session")
+	drove := ""
+	if *flagDuration > 0 {
+		n := driveSession(cred, base, sid, strings.Contains(c.body, `"browserName"`), *flagDuration)
+		drove = fmt.Sprintf(" (drove %s, %d acts)", flagDuration.Round(time.Second), n)
+	}
 	// best-effort delete (free the parallel); ignore the result
-	del := httpx.Request{Method: "DELETE", URL: strings.TrimSuffix(c.url, "/session") + "/session/" + sid}
+	del := httpx.Request{Method: "DELETE", URL: base + "/session/" + sid}
 	cred.Apply(&del)
 	_, _ = httpx.Do(&http.Client{Timeout: 30 * time.Second}, del)
-	return true, "session " + sid
+	return true, "session " + sid + drove
+}
+
+// driveSession keeps a live session busy for dur with real activity so its video,
+// network HAR, and screenshots are non-empty — a genuine run, not a connect-and-quit.
+// Best-effort: drive errors don't fail the combo (the session creation was the wire act).
+func driveSession(cred httpx.Auth, base, sid string, web bool, dur time.Duration) int {
+	urls := []string{"https://www.lambdatest.com", "https://www.lambdatest.com/support/docs/", "https://www.lambdatest.com/blog/"}
+	deadline := time.Now().Add(dur)
+	acts := 0
+	for i := 0; time.Now().Before(deadline); i++ {
+		if web {
+			body, _ := json.Marshal(map[string]string{"url": urls[i%len(urls)]})
+			nav := httpx.Request{Method: "POST", URL: base + "/session/" + sid + "/url", Body: string(body), Headers: map[string]string{"Content-Type": "application/json"}}
+			cred.Apply(&nav)
+			_, _ = httpx.Do(&http.Client{Timeout: 60 * time.Second}, nav)
+			acts++
+		}
+		// a screenshot is activity AND a captured frame; works on web and native app
+		ss := httpx.Request{Method: "GET", URL: base + "/session/" + sid + "/screenshot"}
+		cred.Apply(&ss)
+		_, _ = httpx.Do(&http.Client{Timeout: 60 * time.Second}, ss)
+		acts++
+		time.Sleep(8 * time.Second)
+	}
+	return acts
 }
 
 // runChannel: CHANNEL — inject auth into ?capabilities=, dial (with upgrade
