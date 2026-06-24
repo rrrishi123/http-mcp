@@ -162,7 +162,7 @@
     },
     "verified_runs": {
       "espresso-rd": "PASSED buildId 22983015 — [Galaxy S23-13], 4 sessions, 1m13s, appautomation dashboard",
-      "xcui-vd": "RUNNABLE now: ProverbialApp + ProverbialTestApp, isVirtualDevice:true, /v1/xcui/build, an iOS simulator device — pending run",
+      "xcui-vd": "RUN via http-mcp prod:adminltqa, ProverbialApp+ProverbialTestApp, isVirtualDevice:true, /v1/xcui/build. buildId 22986617 [iPhone 15-17] -> TIMEOUT (bare-major version matched no simulator); buildId 22987095 [iPhone 15-18.0] -> resubmitted with a valid point version. Lesson: iOS VD device string must carry a point os version from the catalog.",
       "espresso-vd": "NOT runnable with current apps: androidVirtual exists but has no paired emulator test suite",
       "flutter": "endpoints mapped; no flutter apps uploaded for adminltqa"
     }
