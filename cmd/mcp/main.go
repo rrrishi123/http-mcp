@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -140,6 +141,7 @@ func (s *server) tools() []any {
 					"params":     map[string]any{"type": "object", "description": "Command params object (defaults to {})."},
 					"id":         map[string]any{"type": "integer", "description": "Command id to match the response against (default 1)."},
 					"timeout_ms": map[string]any{"type": "integer", "description": "Give up waiting for the response after this many ms (default 30000)."},
+					"auth":       map[string]any{"type": "object", "description": "Optional. {profile:\"name\"} resolves a credential BELOW the boundary and injects it into the channel handshake — LambdaTest ?capabilities= (LT:Options.user/accessKey) or URL userinfo. The secret never appears in ws_url or logs."},
 				},
 				"required": []any{"ws_url", "method"},
 			},
@@ -159,6 +161,22 @@ func (s *server) bidiCommand(args map[string]any) any {
 	method := str(args["method"])
 	if method == "" {
 		return toolErr("method is required (e.g. browsingContext.getTree or Page.navigate)")
+	}
+	// Optional auth: resolve a profile below the boundary and inject into the ws
+	// handshake (cloud CDP needs the cred in the connect URL, not a header). The
+	// agent passes ws_url WITHOUT the secret + {auth:{profile}}; the wire fills it.
+	if a, ok := args["auth"].(map[string]any); ok {
+		if p := str(a["profile"]); p != "" {
+			resolved, err := auth.Resolve(p)
+			if err != nil {
+				return toolErr("auth: " + err.Error())
+			}
+			injected, err := applyChannelAuth(wsURL, resolved.User, resolved.Key)
+			if err != nil {
+				return toolErr("auth inject: " + err.Error())
+			}
+			wsURL = injected
+		}
 	}
 	id := 1
 	if v, ok := args["id"].(float64); ok && v > 0 {
@@ -200,6 +218,39 @@ func (s *server) bidiCommand(args map[string]any) any {
 			return toolText(map[string]any{"sent": cmd, "response": msg})
 		}
 	}
+}
+
+// applyChannelAuth injects a resolved credential into a channel (ws) endpoint
+// BELOW the boundary — so the agent never puts the secret in ws_url. Two shapes,
+// matching how cloud channels actually authenticate:
+//  1. caps-in-URL (LambdaTest CDP/Playwright/Puppeteer): ?capabilities=<json> ->
+//     set LT:Options.user/accessKey, re-encode.
+//  2. otherwise: URL userinfo (wss://user:key@host/...) for ws Basic.
+func applyChannelAuth(rawURL, user, key string) (string, error) {
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return rawURL, err
+	}
+	q := u.Query()
+	if capsRaw := q.Get("capabilities"); capsRaw != "" {
+		var caps map[string]any
+		if err := json.Unmarshal([]byte(capsRaw), &caps); err != nil {
+			return rawURL, fmt.Errorf("capabilities is not JSON: %w", err)
+		}
+		lt, _ := caps["LT:Options"].(map[string]any)
+		if lt == nil {
+			lt = map[string]any{}
+		}
+		lt["user"] = user
+		lt["accessKey"] = key
+		caps["LT:Options"] = lt
+		b, _ := json.Marshal(caps)
+		q.Set("capabilities", string(b))
+		u.RawQuery = q.Encode()
+		return u.String(), nil
+	}
+	u.User = url.UserPassword(user, key)
+	return u.String(), nil
 }
 
 // heldChannels probes the conventional broker ports for live HELD channels and
