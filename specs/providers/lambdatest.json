@@ -136,6 +136,20 @@
     }
   },
 
+  "artifacts": {
+    "_doc": "first-class artifact-fetch APIs (peer priority: the 'miss is the gold' verdict evidence — the connective tissue between the efferent run and the afferent verdict). All CALL/http_request with basic_header auth. Fetch after a run completes to capture video + logs.",
+    "session": {
+      "detail_and_video": "GET https://api.lambdatest.com/automation/api/v1/sessions/{sessionId} — returns status, video_url, and metadata",
+      "logs": "GET https://api.lambdatest.com/automation/api/v1/sessions/{sessionId}/log?type={console|network|command|device} — per-type log/HAR",
+      "note": "sessionId comes from the POST /session response (selenium/appium). Enable video/network/console/visual/deviceLog in caps so these are non-empty."
+    },
+    "framework_build": {
+      "artifacts": "GET https://api.lambdatest.com/api/v1/build/{buildId}/artifacts — video, device logs, network, screenshots, reports for an espresso/xcui/cypress build",
+      "status": "poll build status to a terminal verdict (PASSED/FAILED/TIMEOUT) before fetching",
+      "note": "buildId comes from the framework build POST response {buildId:[...]}."
+    }
+  },
+
   "framework_family": {
     "_doc": "the native-suite (CALL) family, mapped from QA-sanctum runFramework2.py + run-verified. http-mcp stays 3 tools; this is DATA a host runner expands into http_request POSTs with auth:{profile}. One endpoint family, four types, RD/VD selected by a payload flag.",
     "host_by_env": {
