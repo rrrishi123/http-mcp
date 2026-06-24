@@ -123,6 +123,8 @@
     "smart_ui": "GET api.lambdatest.com/automation/smart-ui/build/status — see _smartui_build_status",
     "api_set_switcher": "the api-doc splits into exactly 3 API sets (verified 2026-06-24): 'Selenium Automation API', 'Automated Screenshots API', 'App Automation API (Real Devices)'. There is NO separate 'Virtual Devices' app-automation API doc. So RD/VD for app-automation is NOT two API trees: RD is the documented framework/appium path; VD (emulators/simulators) is the SAME wire with the virtual device pool and, for appium, appium:isRealMobile:false. Espresso/XCUI framework builds are documented for real devices only.",
     "host_500_finding": "manual-api.lambdatest.com 500s (nginx/cfOrigin) on the LIVE routes tested with a valid Basic credential — /framework/v1/espresso/build AND /list both 500. manual-api works only for the multipart UPLOAD (app/uploadFramework). The live functional host for builds (and likely the device list) is mobile-api.lambdatest.com. Public api-doc curls show manual-api but it is stale/deprecated for these routes.",
+    "generator": "Docusaurus v3.7.0 (confirmed via meta[name=generator]). No 'Edit this page' link and no public content-repo link (only github.com/LambdaTest org). No OpenAPI/Postman published (peer confirmed: 'API Reference' is 'Coming Soon'). So bulk-from-source is closed; the realistic path is a structured crawl: expand every button[aria-label^=Toggle] -> read a-href leaves -> navigate+scrape curls.",
+    "peer_mapping_guidance": "DeepSeek, given the live doc/generator links: no magic endpoint; sitemap is incomplete here (only 5 selenium pages); best systematic lever (find the Docusaurus content repo) is unavailable. Priority for first-class spec entries: 1) ARTIFACT-fetch APIs (video, device logs, network logs, screenshots, XML/mochawesome reports) — the 'miss is the gold' verdict evidence, the connective tissue between efferent run and afferent verdict; 2) build-status/job-details (pass/fail + ids for artifact fetch); 3) device list; 4) app upload; 5) sessions (lazy). TODO: map the artifact APIs next.",
     "verified_curls": {
       "uploadFramework": "POST manual-api.lambdatest.com/app/uploadFramework  -H 'Authorization: Basic <enc>' -H 'Content-Type: multipart/form-data' -F appFile=<file> -F type=espresso-android -F name=<label>",
       "espresso_build": "POST manual-api.lambdatest.com/framework/v1/espresso/build  -H 'Authorization: Basic <enc>' -H 'Content-Type: application/json' --data '{app,testSuite,device:[],queueTimeout,idleTimeout,deviceLog,network,build,geoLocation}'  -> {status:[Success],buildId:[\"1395514\"],message:[\"\"]}",
@@ -174,6 +176,29 @@
     "platform": ["Windows 11", "Windows 10", "macOS Sonoma", "macOS Ventura"],
     "device": ["Pixel 8", "Galaxy S23", "iPhone 15", "iPhone 14"],
     "mobile_version": ["14", "13", "17", "16"]
+  },
+
+  "matrix_sweep": {
+    "_doc": "run live via http-mcp (the 3 tools only) on prod:adminltqa, build 'http-mcp matrix sweep', 2026-06-24. Secret stayed below the boundary (auth:{profile}). Sessions created + verified + deleted to free parallels; framework builds left to run.",
+    "selenium": {
+      "tool": "http_request (CALL) + bidi_command (CHANNEL for bidi)", "endpoint": "web_hub POST/DELETE /session",
+      "ran": ["chrome-latest / Windows 11 (normal)", "firefox-latest / macOS Sonoma (normal)", "MicrosoftEdge-latest / Windows 11 (normal)", "safari-latest / macOS Sonoma (normal)", "chrome-latest / Windows 11 (bidi: webSocketUrl:true)"],
+      "channel_proof": "the bidi session returned webSocketUrl=wss://cdp-mumbai.lambdatest.com/selenium/session/<id>/ws; bidi_command session.status over it returned Chrome 149/Windows — CALL created, CHANNEL drove, one session, both tools. se:cdp is auto-exposed on chrome sessions (the same CDP-over-selenium path).",
+      "axes": "win+mac x {chrome,firefox,edge,safari} x {normal, bidi}"
+    },
+    "appium": {
+      "tool": "http_request (CALL)", "endpoint": "mobile_hub POST/DELETE /session",
+      "ran": ["android app VD (Galaxy S23 emu, lt://androidVirtual, UiAutomator2)", "ios app VD (iPhone 15 sim 18.0, lt://iosVirtual, XCUITest)", "android web VD (Galaxy S23 emu, Chrome)", "ios web VD (iPhone 15 sim, safari)", "android web RD (real Samsung SC-51D, Chrome)", "ios web RD (real iPhone 14, safari)"],
+      "axes": "android+ios x app+web x rd+vd — isRealMobile flag picks the pool; RD confirmed real hardware (udid RFCWA0YEZ7P samsung, 00008110-... iPhone)",
+      "rd_vd_version_nuance": "RD iOS uses bare-major versions (iPhone 14 -> 16,18); VD iOS uses point versions (iPhone 15 -> 18.0). Pull the exact string from lambdatest-catalog per pool."
+    },
+    "puppeteer": {"tool": "bidi_command (CHANNEL)", "endpoint": "cdp /puppeteer?capabilities=", "ran": ["Chrome-latest / Windows 11 — Browser.getVersion -> Chrome/149.0.7827.197, protocol 1.3"], "inject_auth": "caps_url (LT:Options in ?capabilities=)"},
+    "espresso": {"tool": "http_request (CALL)", "ran": ["espresso-rd PASSED buildId 22983015"]},
+    "xcui": {"tool": "http_request (CALL)", "ran": ["xcui-vd buildId 22987095 [iPhone 15-18.0] Running 5 sessions; v1 [iPhone 15-17] Timeout (bad version)"]},
+    "not_runnable_via_two_tools": {
+      "playwright": "needs a host Playwright client — /playwright speaks Playwright's own protocol (CDP superset), NOT raw CDP, so bidi_command cannot drive it. The CALL to create + the host adapter live in 8/pilot, not http-mcp.",
+      "cypress": "CLI-submitted job (lambdatest-cypress-cli zips project + config, POSTs a build); not a live remote-control. http-mcp maps its GET result endpoints only."
+    }
   },
 
   "vd_catalog": {
