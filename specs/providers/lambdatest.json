@@ -19,6 +19,7 @@
     "cdp": "wss://cdp.lambdatest.com",
     "hyperexecute": "https://api.hyperexecute.cloud",
     "automation_api": "https://api.lambdatest.com/automation/api/v1",
+    "capability_generator": "https://mobile-api.lambdatest.com/mobile-automation/api/v1/capability/generator?isVirtualDevice={true|false} — the LIVE device+appium-version catalog the capabilities-generator UI itself calls (no auth; needs origin/referer lambdatest.com). Use this instead of manual-api/list, which 500s. Returns {app,web}.{appiumVersions,devices}.{android,ios}; devices = brands -> [{name, osVersion[]}].",
     "apps_api": "https://manual-api.lambdatest.com/app/data",
     "apps_upload": "https://manual-api.lambdatest.com/app/upload/realDevice",
     "framework_upload": "https://manual-api.lambdatest.com/app/uploadFramework",
@@ -173,5 +174,21 @@
     "platform": ["Windows 11", "Windows 10", "macOS Sonoma", "macOS Ventura"],
     "device": ["Pixel 8", "Galaxy S23", "iPhone 15", "iPhone 14"],
     "mobile_version": ["14", "13", "17", "16"]
+  },
+
+  "vd_catalog": {
+    "_doc": "virtual-device catalog grounded from capability_generator?isVirtualDevice=true on 2026-06-24 (the live source; manual-api/list 500s). Real-device catalog is the same endpoint with isVirtualDevice=false.",
+    "android": {
+      "count": "13 brands / 158 devices",
+      "brands": ["Asus", "Generic Emulator", "Getac", "Google", "LG", "Motorola", "Nokia", "OPPO", "OnePlus", "Samsung", "Vivo", "Xiaomi", "realme"],
+      "examples": {"Generic Android": ["11", "12", "13", "14"], "Pixel 8 Pro": ["14", "15", "16"], "Galaxy S23": ["13", "14", "15"], "Galaxy S24 Ultra": ["14", "15"], "Galaxy S25": ["15", "16"]},
+      "appium_versions_by_os": "appiumVersions.android lists per-os_version version[] with a latest_version (e.g. os 13 -> latest 2.16.2)"
+    },
+    "ios": {
+      "count": "1 brand (Apple) / 64 devices",
+      "examples": {"iPhone 15": ["17.0", "17.2", "17.4", "17.5", "18.0", "18.1", "18.5", "26.0"], "iPhone 15 Pro": ["17.0", "18.0", "18.5", "26.0"]},
+      "version_format": "iOS VD versions are POINT versions (17.0, 18.0, 18.5, 26.0) — NOT bare major (17). A device string like 'iPhone 15-17' may not match a simulator; use 'iPhone 15-18.0'."
+    },
+    "device_string": "framework build device[] uses 'Name-Version' (verified: 'Galaxy S23-13' ran RD). For VD pair the catalog name+osVersion exactly, and set isVirtualDevice:true."
   }
 }
