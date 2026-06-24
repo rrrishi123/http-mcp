@@ -166,6 +166,14 @@ func (s *server) bidiCommand(args map[string]any) any {
 	// Optional auth: resolve a profile below the boundary and inject into the ws
 	// handshake (cloud CDP needs the cred in the connect URL, not a header). The
 	// agent passes ws_url WITHOUT the secret + {auth:{profile}}; the wire fills it.
+	//
+	// redact scrubs the resolved (secret-bearing) ws URL and the raw credential
+	// out of any error string before it leaves this process. The resolved URL
+	// carries the key in ?capabilities= or userinfo, so a dial/send/read failure
+	// that echoes the URL would otherwise leak it to the agent and any log. Until
+	// auth injects, it is a no-op; the base ws_url (no secret) is what surfaces.
+	baseWsURL := wsURL
+	redact := func(s string) string { return s }
 	if a, ok := args["auth"].(map[string]any); ok {
 		if p := str(a["profile"]); p != "" {
 			resolved, err := auth.Resolve(p)
@@ -177,6 +185,19 @@ func (s *server) bidiCommand(args map[string]any) any {
 				return toolErr("auth inject: " + err.Error())
 			}
 			wsURL = injected
+			user, key := resolved.User, resolved.Key
+			redact = func(s string) string {
+				if injected != "" {
+					s = strings.ReplaceAll(s, injected, baseWsURL)
+				}
+				if key != "" {
+					s = strings.ReplaceAll(s, key, "***")
+				}
+				if user != "" {
+					s = strings.ReplaceAll(s, user, "***")
+				}
+				return s
+			}
 		}
 	}
 	id := 1
@@ -200,14 +221,14 @@ func (s *server) bidiCommand(args map[string]any) any {
 	}
 	conn, err := wsx.Dial(wsURL, dialTimeout)
 	if err != nil {
-		return toolErr("bidi dial: " + err.Error())
+		return toolErr("bidi dial: " + redact(err.Error()))
 	}
 	defer conn.Close()
 	conn.SetDeadline(time.Now().Add(timeout))
 
 	payload, _ := json.Marshal(cmd)
 	if err := conn.WriteText(string(payload)); err != nil {
-		return toolErr("bidi send: " + err.Error())
+		return toolErr("bidi send: " + redact(err.Error()))
 	}
 	// Read frames until the response carrying our id. Events (no id, or a
 	// different id) arrive interleaved on a channel — skip them; they are the
@@ -215,7 +236,7 @@ func (s *server) bidiCommand(args map[string]any) any {
 	for {
 		frame, err := conn.ReadText()
 		if err != nil {
-			return toolErr("bidi read: " + err.Error())
+			return toolErr("bidi read: " + redact(err.Error()))
 		}
 		var msg map[string]any
 		if json.Unmarshal([]byte(frame), &msg) != nil {
