@@ -1,211 +1,131 @@
-# http-mcp
+# http-mcp — the WIRE
 
-An MCP server whose tools are protocol calls.
+> Part of **The Wire** — a four-arm system for protocol-agnostic test automation with record & replay.
+> **This repo is the http-mcp — the WIRE** — the two modes (CALL/CHANNEL) + auth-injection + probe/harvest. Zero provider awareness.
 
-A call is four fields: `method`, `url`, `headers`, `body`. The server makes
-the call and returns the response. Nothing else.
+---
 
-No language binding. No framework. Single static Go binary, `net/http` stdlib.
+<!-- ===== SHARED TERRITORY (identical across http-mcp · 8 · pilot · adapters) ===== -->
 
-## The primitive
+# The Wire — a four-arm system
 
-```
-http_request(method, url, headers, body) -> response
-```
+**Every test/automation interaction reduces to two _modes_ over a deliberately lean wire.**
+Capability is composed _above_ the wire by three more arms. A fork of these four arms
+turns any existing regression suite into a record-and-replay automation suite.
 
-Auth is a header strategy, not a dependency: basic (`user:key` → base64),
-bearer, api-key.
+> The thesis: a wire that holds exactly **two modes** + a generic credential-injection
+> mechanism + generic probe/harvest is *enough* to reach every provider, every framework,
+> every protocol — without the wire knowing about any of them. Proven live: a 15-combo
+> matrix (selenium · appium rd+vd app+web · puppeteer · playwright · espresso · xcui) ran
+> through just those two tools.
 
-Everything else — WebDriver, Appium, Selenium Grid, any REST or RPC API —
-is that one call against a different URL. A WebDriver session is
-`POST /session`; tapping an element is `POST /session/{id}/element/{el}/click`.
-There is no "Selenium client" or "Appium client" on the wire; there are
-sessions, against a binary, with a route table.
+## The four arms
 
-## The channel
+| Arm | Repo | Gives you | Owns | Never owns |
+|---|---|---|---|---|
+| **WIRE** | `http-mcp` | reach | the two modes (`http_request`, `bidi_command`), auth-injection mechanism, probe/harvest, route-priors | provider logic, composition, observation |
+| **HOST** | `pilot` | agency | local-model OODA Orient+Decide, shell/fs, imports an adapter | the wire's transport, provider shape |
+| **WITNESS** | `8` | sight | OODA Observe across all tabs, aperture-control, names the cause, recommends | control of any target — it observes, never drives |
+| **ADAPTERS** | `adapters` | shape | per-provider spec/runner/upload/catalog/composer, record→replay, provider-shaped auth | the generic arms (it depends on them, one-way) |
 
-`http_request` is one physics: a call — request, response, done. Part of the
-wire is a *different* physics: a channel — a WebSocket you produce commands into
-and consume frames from, held open. **CDP** (Chrome DevTools Protocol) and
-**WebDriver BiDi** are this shape, and Playwright, Puppeteer, and Selenium-BiDi
-are composers over it the way Selenium/Appium are composers over HTTP. So one
-more atom maps that whole family:
+The dependency arrow is one-way: adapters → host/witness → wire. Lower layers never know the upper ones.
 
-```
-bidi_command(ws_url, method, params) -> response
-```
+## Two MODES, two atoms
 
-The WebSocket client is hand-rolled in stdlib (`internal/wsx`) — no library, the
-same way `httpx` is just `net/http`. `bidi_command` opens a fresh socket per
-call, which is honest only for *stateless probes* (`browsingContext.getTree`,
-a one-shot navigate). The channel is otherwise **stateful**: a `session.subscribe`
-lives on the socket, a CDP `sessionId` is bound to it, and many effects arrive
-only as events. Close the socket and all of that dies — so the channel's true
-atom is not open-send-close but a **held** connection.
+A **mode** is an interaction shape — *not* a transport. There are exactly two:
 
-That held connection is `cmd/channel`: it holds one long-lived socket and fronts
-it with `POST /command` (send on the held socket, get the id-matched response)
-and `GET /events` (SSE — every id-less frame fanned out). One reader routes
-frames: id → the waiting command, no-id → the event stream. Subscriptions and
-session state survive across commands. The broker only holds, routes, and fans
-out — it never interprets a command or composes a sequence; that's the host's
-job. So `peer_ask`-style "ask a target, await its echo" is a *host* composition
-over `bidi_command` + the held channel, never a wire primitive.
+- **CALL** — one request → one response (discrete). Tool: **`http_request`**.
+- **CHANNEL** — a held duplex connection you produce commands into and consume events from (continuous). Tool: **`bidi_command`**.
 
-`GET /await` turns the afferent stream into one request/response: it blocks until
-an id-less frame matching a substring filter arrives, so a plain caller can wait
-for an event without streaming or polling.
+Two modes, two atoms. Everything else is a *dialect* (of a mode) or a *direction* (of CHANNEL).
 
-**Known limitations (v1):** two race conditions, named here rather than hidden —
-- **`/await` subscribe-after-send race.** A consumer that does `POST /command`
-  *then* `GET /await` can miss an event that fires in the gap. Safe for slow
-  replies (seconds); unsafe for fast ones (ms). v2 fix: subscribe *before*
-  sending — a `?await=` parameter on `/command`.
-- **Fan-out drop under burst.** Event delivery is non-blocking (a slow consumer
-  is never allowed to stall the wire), so a burst can fill a subscriber's buffer
-  and drop the awaited event. v2 fix: filter at the fan-out so a subscriber's
-  buffer only holds events it asked for.
+## Transport map — every transport ⇒ 2 modes ⇒ which arm owns it
 
-## Sessions
+![Transport map — modes](docs/diagrams/03-transport-map-modes.png)
 
-Many sessions run at once — local drivers and cloud providers, browsers and
-devices, side by side. Each is fully described by `(hub_url, session_id)`.
-A per-session goroutine supervises its lifecycle:
+| Transport | Mode | Owner | Where |
+|---|---|---|---|
+| HTTP | CALL | wire | `http_request` (probe: webdriver/appium/REST) |
+| gRPC-unary | CALL | wire shape · adapter serializes protobuf | `grpc://` + pb payload |
+| WebSocket / CDP / BiDi | CHANNEL | wire | `bidi_command` (probe: cdp/bidi) |
+| gRPC-stream | CHANNEL | adapter framing | stream over h2 |
+| MQTT pub/sub | CHANNEL | adapter topic-map | broker + topic |
+| WebRTC | CHANNEL (data) / OBSERVE (video) | adapter SDP | — |
+| Unix domain socket | CALL/CHANNEL (locality) | adapters · BYOD | `unix://` + `SCM_RIGHTS` fd-passing |
+| SSE | OBSERVE (afferent-only) | **8** (witness) | held read-only `/feed` |
 
-- **local** sessions: watched for death (the driver process or the session
-  handle going away), reaped when gone.
-- **cloud** sessions (BrowserStack / LambdaTest / SauceLabs): kept warm with a
-  cheap heartbeat before the provider's idle timeout reaps them.
+Three orthogonal properties were conflated by the naive "list of physics": **shape** (the only true mode: CALL/CHANNEL), **transport/locality** (a dialect — lives in adapters), and **direction** (full-duplex vs afferent-only OBSERVE — a sub-mode of CHANNEL, the witness's diet). The wire owns shape only; adapters own every dialect's encoding.
 
-The session store is the *prior*, not the truth. A stored entry is a
-hypothesis; the supervisor verifies it against the live wire and corrects or
-removes it. Concurrency here is structure, not speed (Pike): one goroutine
-per session, each mostly blocked on a ticker or an I/O wait, managing its own
-lifecycle independently.
+## The afferent law (the core IP)
 
-## specs/ — the mapped, then verified, territory
+The model learns **only from what comes back** (afferent); nothing flows *toward* it but observation.
+**Act lives inside Observe** — an act is known only by observing its result. `efferent` (toward the target)
+is one leg; the model's knowledge is built from the `afferent` leg alone.
 
-Route tables are harvested from version-addressable upstreams and stored
-append-only as `<name>@<version>.json`:
+## 8 — the witness: observe every tab, control none
+
+8 is the OODA **Observe**. It must see *all* tabs (per-tab memory/CPU/events, including itself)
+without driving any of them. Two strictly separate channels:
+
+| Channel | What | Control? |
+|---|---|---|
+| **Observation** (8) | `browsingContext.getTree`, `about:processes` sampling, `session.subscribe` | **read-only — no commands** |
+| **Control** (pilot/adapters/operator) | `bidi_command`, `http_request` | efferent — sent via the wire |
+
+- **Gated trace:** continuous *ambient telemetry* (mem/CPU/event-rate, ~10s) on **all** tabs; **full** high-rate trace only on the context-under-test.
+- **Aperture-control** (8 throttles itself, never the target): sampling rate · event filtering · coalescing · circuit-breaker (unsubscribe a noisy context) · byte-budgeted eviction. 8 applies the same controls to its *own* consumption so the witness never starves what it watches.
+- **The boundary:** 8 can recommend recycling a leaking tab → pilot decides → wire executes. 8 itself **never** navigates or commands a target. It recommends; it does not act.
+
+![Data plane — what each arm stores](docs/diagrams/04-data-plane.png)
+
+## Record & replay — a fork becomes a suite
+
+The spine of the suite:
 
 ```
-go run ./cmd/harvest         # append snapshots for the latest published versions
+RECORD  →  SPEC  →  REPLAY  →  SUITE
+  8         neutral   adapters    curated matrix
+ traces     trace     runner      on a fork
 ```
 
-A snapshot is *hearsay*. Probing turns it into *measurement* — every route in
-the union of all snapshots is fired at a live binary with a bogus session id
-(zero side effects), and the server's own answer classifies it:
+- **Neutral trace** (the 8 ↔ replay contract): streamable NDJSON `Frame`s — `seq · ts · session · mode · dir` + payload. **A frame carries `auth_slot` (where a credential injects), never the secret** — the trace is safe to store and share; the secret stays below the boundary.
+- **Suite structure** (above the wire): test files, runners, **CI invocation, env vars, pre/post hooks** (e.g. app-upload). The trace captures *what the wire did*; the suite structure captures *why/how it was invoked*. Lives in the tenant fork.
+- Flow: **Observe** (8 traces a real run) → **Annotate** (map trace ↔ suite context) → **Materialize** (runner → provider-specific replayable spec) → **Replay**.
 
-```
-go run ./cmd/probe http://localhost:4444 geckodriver@0.37.0
-```
+## Architecture views
 
-A `404`/plain-text means the route is absent; a W3C JSON error means it exists.
-The probe verdict beats the snapshot claim, always.
+![C4 container](docs/diagrams/01-c4-container.png)
 
-The same discipline now covers the **second physics**. `specs/channel/` holds a
-BiDi/CDP catalog — not routes but *methods + events* (the afferent half is
-first‑class — what the channel *emits*, not only what you send). `discover`
-surfaces a held channel against it, each method with a ready‑to‑fire
-`http_request` example. The channel's verdict is the JSON‑RPC error code:
-`-32601` (unknown command) is its `404`; a params error means the method exists.
-Both physics, one discipline — a prior held lightly, the live wire as the verdict.
+![C4 component](docs/diagrams/02-c4-component.png)
 
-## Commands
+## Deployment model — product vs client (two identities)
 
-| command        | what it does                                              |
-|----------------|-----------------------------------------------------------|
-| `cmd/mcp`      | the MCP server (stdio): `http_request` + `bidi_command` + `discover` |
-| `cmd/harvest`  | append route-table snapshots from upstream releases       |
-| `cmd/probe`    | verify a snapshot against a live binary, zero side effects |
-| `cmd/session`  | run one composed session end to end (reference client)    |
-| `cmd/wire`     | transparent witness proxy — logs every call on the wire   |
-| `cmd/channel`  | hold one BiDi/CDP socket; front it with `POST /command` + `GET /events` (SSE) — physics #2's held atom |
+- **Product / IP** = the four generic arms. They stay provider- and tenant-agnostic.
+- **Client / tenant** = a **fork** of all four arms. Everything tenant-specific (regression specs, app inventory, CI runners) lives **only in the fork's `adapters`**, never upstream.
+- A real tenant maps its existing regression suites → records them via 8 → replays them via the adapters runner.
+- One-way dependency: the fork depends on upstream arms; upstream never learns the tenant. Generic fixes are PR'd back upstream; tenant specifics stay in the fork.
 
-## Run the MCP server
+## Versioning
 
-```
-go build -o http-mcp ./cmd/mcp
-```
+Independent semver **per arm** + a separately-versioned **contract** (trace format, RunRequest/RunResult).
+Each arm declares which contract version it supports; the replay runner checks a trace's contract version
+before replaying. Baseline: **`v0.0.1`** across all four arms.
 
-Register it as a stdio MCP server in your client (`.mcp.json` / Claude Code):
+## Why "the wire is enough"
 
-```json
-{ "mcpServers": { "http-mcp": { "command": "/path/to/http-mcp" } } }
-```
+Grounded, not vibes: **End-to-End Argument** (Saltzer/Reed/Clark 1984) — interaction shape, not transport,
+is the architectural invariant; **Hourglass / narrow-waist** (Beck, CACM 2019) — the waist's power is minimality;
+**Dependency Inversion** (Martin) — the arrow points at the wire, never away; **Protocol ossification** (RFC 9170) —
+bake in a transport and you ossify to it, so the waist is defined by mode not transport; **OODA** (Boyd) — host
+Orients/Decides, witness Observes; **Kalman observability** — you cannot control what you cannot observe;
+**Bulkhead / backpressure / circuit-breaker** (Nygard) — aperture-control of the observer itself.
 
-## Why a wire, not a binding
+## The four repos
 
-The Selenium and Appium clients are good software. They're how a person writes
-automation comfortably in their own language — Java, Python, Ruby, JS. None of
-this is meant to replace them or to say they did it wrong.
+- WIRE — https://github.com/rrrishi123/http-mcp
+- WITNESS — https://github.com/rrrishi123/8
+- HOST — https://github.com/rrrishi123/pilot
+- ADAPTERS — https://github.com/rrrishi123/adapters
 
-It's just that, underneath, they're all making the same moves on the same wire:
-
-```
-  Selenium-Java   Selenium-Python   WebdriverIO (JS)   Appium-Ruby   Playwright
-        │               │                  │               │            │
-        └───────────────┴────────┬─────────┴───────────────┴────────────┘
-                                  │   each is a wrapper, per language;
-                                  │   beneath them it's all one protocol
-                                  ▼
-   ┌──────────────────────────────────────────────────────────────────────┐
-   │  the wire                                                              │
-   │     W3C WebDriver · Appium      →  HTTP        (a call)                │
-   │     CDP · WebDriver BiDi        →  WebSocket   (a channel)             │
-   └──────────────────────────────────────────────────────────────────────┘
-                                  ▲
-                                  │   http-mcp lives here: http_request +
-                                  │   bidi_command. Not above the bindings —
-                                  │   beneath them, the layer they all already
-                                  │   stand on, exposed so an agent can compose
-                                  │   it directly, in any language or none.
-```
-
-A language binding gives one language ergonomic hands. The wire gives *anything*
-that can speak HTTP or a WebSocket the same reach — which now includes a model.
-That's the only claim here: same protocol, one layer down, nothing in the way.
-
-## Philosophy
-
-The tool surface is small on purpose. Rather than exposing one tool per
-endpoint (hundreds of them, each a cost in context and attention), the server
-exposes the primitive and lets the territory describe itself on the wire —
-`GET /status`, capability negotiation, `404`-vs-`405`, a driver's own command
-enumeration. The map (`specs/`) is a prior held lightly; the live call is the
-verdict. The server stays dumb so everything real can grow on top of it.
-
-### Tenets — how it ships
-
-Not aspirations. This is how every change to the wire has actually been made.
-
-- **Discoverability is the feature; tool count is the constraint.** When a need
-  appeared — one held channel, many clients — the answer was not a new tool. It
-  was `discover` surfacing the channel with ready-to-fire examples. A tool that
-  exists only for ergonomics breaks the uniformity, and once broken it never
-  stops breaking. If a model can't follow an example from `discover`, a new tool
-  would not have saved it — it would only paper over the missing reasoning.
-- **Probe the wire; the verdict beats the prior.** `specs/` is a hypothesis;
-  `GET /status`, a driver's own enumeration, a `404`-vs-`405` are the truth.
-  Re-perceive, never assume — and apply the same discipline to yourself: report
-  the symptom, not the story you would prefer.
-- **Correlation is not cause.** This is a distributed system; you see effects
-  through logs and symptoms, rarely the cause directly. "Firefox quit" is an
-  observation; "my change quit it" is a claim that must be earned. Hold the line
-  between the two.
-- **One owner per socket.** A duplex channel is a single socket with exactly one
-  holder (the broker). Clients share it by going *through* the holder, not by
-  fighting for it — no dual-writer races, no Heisenbugs.
-- **Dogfood on the wire you ship.** Drive it with `http_request` and
-  `bidi_command`, never a shell shortcut around them. Verify by looking — a
-  screenshot, a `getTree` — not by asserting it worked.
-- **Lean carries nothing back down.** What stands above the wire may be as rich
-  as it likes; the wire stays atomic and carries none of its weight. Two
-  physics — a call, a channel — and no third smuggled in.
-- **Good for all.** The wire must be usable by the smallest model that can speak
-  HTTP, not only the largest that can reason out a broker's single-socket
-  constraint. The map describes itself; capability is never gated on cleverness.
-
-## License
-
-MIT.
+> These PRs are the **territory map**. They are intentionally not merged — they accumulate until the
+> four-arm picture is complete, then become the clean first commit of each repo.

@@ -1,0 +1,44 @@
+{
+ "source": "npm:@wdio/protocols/selenium",
+ "version": "9.29.0",
+ "fetched": "2026-06-24",
+ "count": 9,
+ "routes": [
+  {
+   "method": "DELETE",
+   "path": "/session/:sessionId/se/files"
+  },
+  {
+   "method": "GET",
+   "path": "/grid/api/hub/"
+  },
+  {
+   "method": "GET",
+   "path": "/grid/api/testsession?session=:session"
+  },
+  {
+   "method": "GET",
+   "path": "/lifecycle-manager?action=:action"
+  },
+  {
+   "method": "GET",
+   "path": "/session/:sessionId/se/files"
+  },
+  {
+   "method": "POST",
+   "path": "/graphql"
+  },
+  {
+   "method": "POST",
+   "path": "/grid/api/proxy"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/se/file"
+  },
+  {
+   "method": "POST",
+   "path": "/session/:sessionId/se/files"
+  }
+ ]
+}

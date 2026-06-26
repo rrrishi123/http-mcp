@@ -174,7 +174,142 @@ func harvestWdio() {
 	}
 }
 
+// getLT fetches a LambdaTest public catalog endpoint. It is CORS-gated, so it
+// wants the generator's own origin/referer — the same headers the
+// capabilities-generator UI sends. No auth: this is the public device catalog.
+func getLT(url string) []byte {
+	req, _ := http.NewRequest("GET", url, nil)
+	req.Header.Set("accept", "application/json")
+	req.Header.Set("origin", "https://www.lambdatest.com")
+	req.Header.Set("referer", "https://www.lambdatest.com/capabilities-generator/")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		panic(err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		panic(fmt.Sprintf("GET %s -> %d", url, resp.StatusCode))
+	}
+	b, err := io.ReadAll(resp.Body)
+	if err != nil {
+		panic(err)
+	}
+	return b
+}
+
+// ltBrands flattens a {brands: {<brand>: [{name, osVersion[]}]}} node into
+// {deviceName: [osVersion...]}. Both catalog shapes bottom out here.
+func ltBrands(node map[string]any) map[string][]string {
+	out := map[string][]string{}
+	brands, _ := node["brands"].(map[string]any)
+	for _, list := range brands {
+		arr, _ := list.([]any)
+		for _, d := range arr {
+			dm, _ := d.(map[string]any)
+			name, _ := dm["name"].(string)
+			var vers []string
+			if ov, ok := dm["osVersion"].([]any); ok {
+				for _, v := range ov {
+					if s, ok := v.(string); ok {
+						vers = append(vers, s)
+					}
+				}
+			}
+			sort.Strings(vers)
+			if name != "" {
+				out[name] = vers
+			}
+		}
+	}
+	return out
+}
+
+// ltAppiumLatest flattens appiumVersions.<plat>[] -> {os_version: latest_version}.
+func ltAppiumLatest(section map[string]any, plat string) map[string]string {
+	out := map[string]string{}
+	av, _ := section["appiumVersions"].(map[string]any)
+	arr, _ := av[plat].([]any)
+	for _, e := range arr {
+		em, _ := e.(map[string]any)
+		os, _ := em["os_version"].(string)
+		latest, _ := em["latest_version"].(string)
+		if os != "" {
+			out[os] = latest
+		}
+	}
+	return out
+}
+
+// harvestLambdatestCatalog pulls the LIVE device + appium + browser catalog the
+// capabilities-generator UI calls, for both pools (virtual + real device), and
+// writes a normalized snapshot. Unlike the route tables this is REWRITTEN each
+// run with no timestamp inside it — so the file changes only when LambdaTest's
+// catalog actually changes (a new device/OS/appium version), and harvest-drift
+// surfaces that. This is the api-doc/catalog -> specs pull the matrix needs.
+func harvestLambdatestCatalog() {
+	defer func() {
+		// A third-party live endpoint can blip; do not fail the whole harvest.
+		if r := recover(); r != nil {
+			fmt.Printf("lambdatest catalog: skipped (%v)\n", r)
+		}
+	}()
+	base := "https://mobile-api.lambdatest.com/mobile-automation/api/v1/capability/generator?isVirtualDevice="
+	pools := map[string]any{}
+	for _, p := range []struct{ key, flag string }{{"vd", "true"}, {"rd", "false"}} {
+		var raw map[string]any
+		if err := json.Unmarshal(getLT(base+p.flag), &raw); err != nil {
+			panic(err)
+		}
+		entry := map[string]any{}
+		if _, hasApp := raw["app"]; hasApp {
+			// VD shape: app/web sections, each {appiumVersions, devices:{<plat>:{brands}}}.
+			for _, sect := range []string{"app", "web"} {
+				s, _ := raw[sect].(map[string]any)
+				if s == nil {
+					continue
+				}
+				devs, _ := s["devices"].(map[string]any)
+				se := map[string]any{
+					"appiumLatestAndroid": ltAppiumLatest(s, "android"),
+					"appiumLatestIos":     ltAppiumLatest(s, "ios"),
+				}
+				for plat, node := range devs {
+					if nm, ok := node.(map[string]any); ok {
+						se[plat] = ltBrands(nm)
+					}
+				}
+				if vm, ok := s["vdOsBrowserMapping"]; ok {
+					se["osBrowserMapping"] = vm
+				}
+				entry[sect] = se
+			}
+		} else {
+			// RD shape: top-level <plat> -> {brands} (android/ios/roku/tvos).
+			for plat, node := range raw {
+				if nm, ok := node.(map[string]any); ok {
+					if _, hasBrands := nm["brands"]; hasBrands {
+						entry[plat] = ltBrands(nm)
+					}
+				}
+			}
+		}
+		pools[p.key] = entry
+	}
+	out := map[string]any{
+		"source":   "lambdatest capabilities-generator (live device/appium/browser catalog)",
+		"endpoint": base + "{true|false}",
+		"_note":    "rewritten each harvest, no timestamp inside — a diff means LambdaTest's catalog changed. pools: vd=virtual, rd=real device; each has app+web sections.",
+		"pools":    pools,
+	}
+	b, _ := json.MarshalIndent(out, "", " ")
+	path := filepath.Join(specsDir(), "providers", "lambdatest-catalog.json")
+	os.MkdirAll(filepath.Dir(path), 0o755)
+	os.WriteFile(path, append(b, '\n'), 0o644)
+	fmt.Println("wrote specs/providers/lambdatest-catalog.json")
+}
+
 func main() {
 	harvestAppium()
 	harvestWdio()
+	harvestLambdatestCatalog()
 }

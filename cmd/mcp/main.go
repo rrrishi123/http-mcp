@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -100,11 +101,12 @@ func (s *server) tools() []any {
 			"inputSchema": map[string]any{
 				"type": "object",
 				"properties": map[string]any{
-					"method":  str("HTTP method (GET, POST, DELETE, ...)"),
-					"url":     str("Full URL to call."),
-					"headers": map[string]any{"type": "object", "description": "Header name -> value.", "additionalProperties": map[string]any{"type": "string"}},
-					"body":    str("Request body (raw string; JSON by default)."),
-					"auth":    map[string]any{"type": "object", "description": "Optional auth. Either {profile: \"prod:adminltqa\"} to resolve a Basic credential from the environment (LT_USERNAME/LT_ACCESS_KEY) or a gitignored auth/<profile>.json — the secret never passes through here — or a literal {type: basic|bearer|apikey, user, key, header}."},
+					"method":     str("HTTP method (GET, POST, DELETE, ...)"),
+					"url":        str("Full URL to call."),
+					"headers":    map[string]any{"type": "object", "description": "Header name -> value.", "additionalProperties": map[string]any{"type": "string"}},
+					"body":       str("Request body (raw string; JSON by default)."),
+					"auth":       map[string]any{"type": "object", "description": "Optional auth. Either {profile: \"prod:adminltqa\"} to resolve a Basic credential from the environment (LT_USERNAME/LT_ACCESS_KEY) or a gitignored auth/<profile>.json — the secret never passes through here — or a literal {type: basic|bearer|apikey, user, key, header}."},
+					"timeout_ms": map[string]any{"type": "integer", "description": "Optional. Give up after this many ms (default ~30s). Raise it for slow cloud session creation — Appium/Espresso/XCUITest builds take tens of seconds."},
 				},
 				"required": []any{"method", "url"},
 			},
@@ -139,7 +141,9 @@ func (s *server) tools() []any {
 					"method":     str("Command method, e.g. browsingContext.getTree (BiDi) or Page.navigate (CDP)."),
 					"params":     map[string]any{"type": "object", "description": "Command params object (defaults to {})."},
 					"id":         map[string]any{"type": "integer", "description": "Command id to match the response against (default 1)."},
+					"headers":    map[string]any{"type": "object", "description": "Optional WS upgrade headers (name -> value). For channels that gate the handshake — e.g. LambdaTest /playwright needs {\"x-playwright-browser\":\"chromium\"} or the upgrade 400s. Host/Upgrade/Connection/Sec-WebSocket-* are reserved.", "additionalProperties": map[string]any{"type": "string"}},
 					"timeout_ms": map[string]any{"type": "integer", "description": "Give up waiting for the response after this many ms (default 30000)."},
+					"auth":       map[string]any{"type": "object", "description": "Optional. {profile:\"name\"} resolves a credential BELOW the boundary and injects it into the channel handshake — LambdaTest ?capabilities= (LT:Options.user/accessKey) or URL userinfo. The secret never appears in ws_url or logs."},
 				},
 				"required": []any{"ws_url", "method"},
 			},
@@ -160,6 +164,43 @@ func (s *server) bidiCommand(args map[string]any) any {
 	if method == "" {
 		return toolErr("method is required (e.g. browsingContext.getTree or Page.navigate)")
 	}
+	// Optional auth: resolve a profile below the boundary and inject into the ws
+	// handshake (cloud CDP needs the cred in the connect URL, not a header). The
+	// agent passes ws_url WITHOUT the secret + {auth:{profile}}; the wire fills it.
+	//
+	// redact scrubs the resolved (secret-bearing) ws URL and the raw credential
+	// out of any error string before it leaves this process. The resolved URL
+	// carries the key in ?capabilities= or userinfo, so a dial/send/read failure
+	// that echoes the URL would otherwise leak it to the agent and any log. Until
+	// auth injects, it is a no-op; the base ws_url (no secret) is what surfaces.
+	baseWsURL := wsURL
+	redact := func(s string) string { return s }
+	if a, ok := args["auth"].(map[string]any); ok {
+		if p := str(a["profile"]); p != "" {
+			resolved, err := auth.Resolve(p)
+			if err != nil {
+				return toolErr("auth: " + err.Error())
+			}
+			injected, err := applyChannelAuth(wsURL, resolved.User, resolved.Key)
+			if err != nil {
+				return toolErr("auth inject: " + err.Error())
+			}
+			wsURL = injected
+			user, key := resolved.User, resolved.Key
+			redact = func(s string) string {
+				if injected != "" {
+					s = strings.ReplaceAll(s, injected, baseWsURL)
+				}
+				if key != "" {
+					s = strings.ReplaceAll(s, key, "***")
+				}
+				if user != "" {
+					s = strings.ReplaceAll(s, user, "***")
+				}
+				return s
+			}
+		}
+	}
 	id := 1
 	if v, ok := args["id"].(float64); ok && v > 0 {
 		id = int(v)
@@ -173,16 +214,32 @@ func (s *server) bidiCommand(args map[string]any) any {
 		cmd["params"] = p
 	}
 
-	conn, err := wsx.Dial(wsURL, 10*time.Second)
+	// Dial timeout honors timeout_ms too: cloud channels (LambdaTest CDP) cold-start
+	// a browser on connect and can take tens of seconds to complete the handshake.
+	dialTimeout := timeout
+	if dialTimeout < 10*time.Second {
+		dialTimeout = 10 * time.Second
+	}
+	// Optional upgrade headers: some channels gate the WS handshake on a header
+	// (LambdaTest /playwright wants x-playwright-browser, else 400). Generic WS
+	// upgrade headers — not a per-provider tool.
+	var hdrs map[string]string
+	if h, ok := args["headers"].(map[string]any); ok {
+		hdrs = map[string]string{}
+		for k, v := range h {
+			hdrs[k] = str(v)
+		}
+	}
+	conn, err := wsx.DialWithHeaders(wsURL, dialTimeout, hdrs)
 	if err != nil {
-		return toolErr("bidi dial: " + err.Error())
+		return toolErr("bidi dial: " + redact(err.Error()))
 	}
 	defer conn.Close()
 	conn.SetDeadline(time.Now().Add(timeout))
 
 	payload, _ := json.Marshal(cmd)
 	if err := conn.WriteText(string(payload)); err != nil {
-		return toolErr("bidi send: " + err.Error())
+		return toolErr("bidi send: " + redact(err.Error()))
 	}
 	// Read frames until the response carrying our id. Events (no id, or a
 	// different id) arrive interleaved on a channel — skip them; they are the
@@ -190,7 +247,7 @@ func (s *server) bidiCommand(args map[string]any) any {
 	for {
 		frame, err := conn.ReadText()
 		if err != nil {
-			return toolErr("bidi read: " + err.Error())
+			return toolErr("bidi read: " + redact(err.Error()))
 		}
 		var msg map[string]any
 		if json.Unmarshal([]byte(frame), &msg) != nil {
@@ -200,6 +257,39 @@ func (s *server) bidiCommand(args map[string]any) any {
 			return toolText(map[string]any{"sent": cmd, "response": msg})
 		}
 	}
+}
+
+// applyChannelAuth injects a resolved credential into a channel (ws) endpoint
+// BELOW the boundary — so the agent never puts the secret in ws_url. Two shapes,
+// matching how cloud channels actually authenticate:
+//  1. caps-in-URL (LambdaTest CDP/Playwright/Puppeteer): ?capabilities=<json> ->
+//     set LT:Options.user/accessKey, re-encode.
+//  2. otherwise: URL userinfo (wss://user:key@host/...) for ws Basic.
+func applyChannelAuth(rawURL, user, key string) (string, error) {
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return rawURL, err
+	}
+	q := u.Query()
+	if capsRaw := q.Get("capabilities"); capsRaw != "" {
+		var caps map[string]any
+		if err := json.Unmarshal([]byte(capsRaw), &caps); err != nil {
+			return rawURL, fmt.Errorf("capabilities is not JSON: %w", err)
+		}
+		lt, _ := caps["LT:Options"].(map[string]any)
+		if lt == nil {
+			lt = map[string]any{}
+		}
+		lt["user"] = user
+		lt["accessKey"] = key
+		caps["LT:Options"] = lt
+		b, _ := json.Marshal(caps)
+		q.Set("capabilities", string(b))
+		u.RawQuery = q.Encode()
+		return u.String(), nil
+	}
+	u.User = url.UserPassword(user, key)
+	return u.String(), nil
 }
 
 // heldChannels probes the conventional broker ports for live HELD channels and
@@ -498,7 +588,11 @@ func (s *server) callTool(name string, args map[string]any) (any, bool) {
 				(httpx.Auth{Type: str(a["type"]), User: str(a["user"]), Key: str(a["key"]), Header: str(a["header"])}).Apply(&req)
 			}
 		}
-		resp, err := httpx.Do(s.client, req)
+		client := s.client
+		if ms, ok := args["timeout_ms"].(float64); ok && ms > 0 {
+			client = &http.Client{Timeout: time.Duration(ms) * time.Millisecond}
+		}
+		resp, err := httpx.Do(client, req)
 		if err != nil {
 			return toolErr("request failed: " + err.Error()), false
 		}
