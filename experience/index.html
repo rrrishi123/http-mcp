@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Cache-Control" content="no-store">
 <title>the wire — two physics</title>
 <style>
   :root{
@@ -59,13 +60,42 @@
   <div class="controls">
     <button class="call" id="fire">fire a call</button>
     <button class="chan" id="send">send a command</button>
+    <button id="replay">▷ replay both (recorded series)</button>
     <button class="chan" id="toggle">close the channel</button>
   </div>
+  <div id="replayMeta" class="sub" style="margin:6px 0 0"></div>
 
   <div class="legend">
     <span><span class="dot" style="background:var(--call)"></span><b>request → response</b> · one round trip, then the connection closes</span>
     <span><span class="dot" style="background:var(--chan)"></span><b>command ⇄ reply</b> · matched by id on the held line</span>
     <span><span class="dot" style="background:var(--gold)"></span><b>event</b> · pushed by the server, not requested</span>
+  </div>
+
+  <style>
+    .strips{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin:34px 0 0}
+    @media(max-width:760px){.strips{grid-template-columns:1fr}}
+    .strip{border:1px solid var(--line);border-radius:12px;padding:14px;background:#100f15}
+    .strip.call{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--call) 22%,transparent)}
+    .strip.chan{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--chan) 22%,transparent)}
+    .striphdr{font:13px/1.4 ui-monospace,monospace;color:var(--dim);margin-bottom:10px}
+    .striphdr b{color:var(--ink);font-weight:600}
+    .frames{display:flex;flex-wrap:wrap;gap:8px;min-height:64px}
+    .frames figure{margin:0;width:104px}
+    .frames img{width:104px;height:64px;object-fit:cover;border-radius:5px;
+      border:1px solid var(--line);display:block;background:#000}
+    .frames figcaption{font:600 10px/1.3 ui-monospace,monospace;color:var(--gold);
+      margin-top:3px;text-align:center}
+    .frames .empty{color:var(--faint);font:12px ui-monospace,monospace;align-self:center}
+  </style>
+  <div class="strips">
+    <div class="strip call">
+      <div class="striphdr"><b>a call</b> · <span id="callMeta">click "fire a call" — http-mcp captures one frame, then the connection is gone</span></div>
+      <div class="frames" id="callFrames"><span class="empty">no frames yet</span></div>
+    </div>
+    <div class="strip chan">
+      <div class="striphdr"><b>a channel</b> · <span id="chanMeta">click "send a command" — the socket stays held, so http-mcp keeps capturing frames</span></div>
+      <div class="frames" id="chanFrames"><span class="empty">no frames yet</span></div>
+    </div>
   </div>
 
   <div class="twocol">
@@ -101,7 +131,7 @@
       <li><b>L2 · MCP transduction</b><span class="cap part">stdio, not wire</span><span>model → JSON-RPC → server, ~100 µs. Captured only by speaking stdio to http-mcp.</span></li>
       <li><b>L3 · broker queueing</b><span class="cap yes">captured by 8</span><span>the held socket, one owner — contention (head-of-line) shows here.</span></li>
       <li><b>L4 · wire physics</b><span class="cap yes">captured by 8</span><span>the CALL (HTTP) or CHANNEL (ws) op itself — the dots above.</span></li>
-      <li><b>L5 · target render / OS</b><span class="cap part">seen, not read</span><span>browser compositing / device framebuffer. "Is it red?" is pixels only.</span></li>
+      <li><b>L5 · target render / OS</b><span class="cap part">seen, not read</span><span>browser compositing / device framebuffer. The wire (L4) carries the pixels; turning them into "seeing" is a separate render step — a VLM, an eye, a renderer — not the wire. "Is it red?" is pixels only.</span></li>
     </ul>
   </div>
 </div>
@@ -227,8 +257,89 @@ function drawWire(y, kind, open, color, title, lLabel, rLabel){
   }
 }
 
-document.getElementById('fire').onclick = fireCall;
-document.getElementById('send').onclick = sendCommand;
+// ---- real capture: http-mcp screenshots through the collector (CORS-open) ----
+const COLLECTOR = 'http://'+(location.hostname||'127.0.0.1')+':7070';
+let TARGET = null;                 // this page's own BiDi context, so frames show the wire above (moving)
+async function targetCtx(){
+  if(TARGET) return TARGET;
+  try{
+    const j = await (await fetch(COLLECTOR+'/tabs?session=fox')).json();
+    const me = (j.tabs||[]).find(t=>String(t.url||'').includes(location.host)) || (j.tabs||[])[0];
+    TARGET = me && me.context;
+  }catch(e){}
+  return TARGET;
+}
+async function shot(){
+  const ctx = await targetCtx();
+  const j = await (await fetch(COLLECTOR+'/shot?session=fox'+(ctx?'&context='+ctx:''))).json();
+  return j.data;                   // data:image/...;base64,...
+}
+function clearStrip(el){ el.innerHTML=''; }
+function addFrame(el, dataURL, t0){
+  const fig=document.createElement('figure');
+  const img=document.createElement('img'); img.src=dataURL||'';
+  const cap=document.createElement('figcaption'); cap.textContent='+'+Math.round(performance.now()-t0)+' ms';
+  fig.appendChild(img); fig.appendChild(cap); el.appendChild(fig);
+}
+const callFrames=document.getElementById('callFrames'), chanFrames=document.getElementById('chanFrames');
+const callMeta=document.getElementById('callMeta'), chanMeta=document.getElementById('chanMeta');
+const fireBtn=document.getElementById('fire'), sendBtn=document.getElementById('send'), replayBtn=document.getElementById('replay');
+const SERIES='8090-live';
+
+// the REQUEST seat = the same Firefox seen through classic WebDriver (call physics)
+let RSEAT=null;
+async function reqSeat(){
+  if(RSEAT) return RSEAT;
+  try{ const j=await (await fetch(COLLECTOR+'/sessions')).json();
+    RSEAT=(j.sessions||[]).find(s=>s.physics==='call'&&s.kind==='local')?.id; }catch(e){}
+  return RSEAT;
+}
+let recording=false;
+async function ensureRec(){ if(recording) return; await fetch(COLLECTOR+'/record?action=start&name='+SERIES+'&seat=operator'); recording=true; }
+
+// fire a call → a REAL request op on the request seat (classic), recorded; a call
+// is one round trip → one captured frame, then the connection is gone.
+fireBtn.onclick = async ()=>{
+  fireCall(); fireBtn.disabled=true; clearStrip(callFrames);
+  const t0=performance.now();
+  try{
+    await ensureRec();
+    const rs=await reqSeat();
+    await fetch(COLLECTOR+'/act?session='+rs, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'tap',x:200,y:300,seat:'operator'})});
+    const j=await (await fetch(COLLECTOR+'/shot?session='+rs)).json();   // request-physics capture
+    addFrame(callFrames, j.data, t0);
+    callMeta.textContent='REQUEST · 1 frame +'+Math.round(performance.now()-t0)+'ms · recorded to '+SERIES+' · one round trip, then gone';
+  }catch(e){ callMeta.textContent='call failed: '+e; }
+  fireBtn.disabled=false;
+};
+// send a command → a REAL channel op on the same Firefox tab (BiDi), recorded; the
+// socket is held, so we keep capturing a stream of frames.
+sendBtn.onclick = async ()=>{
+  if(!channelOpen) return;
+  sendCommand(); sendBtn.disabled=true; clearStrip(chanFrames);
+  const t0=performance.now(); let n=0;
+  try{
+    await ensureRec();
+    const ctx=await targetCtx();
+    await fetch(COLLECTOR+'/act?session=fox&context='+ctx, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'tap',x:200,y:300,seat:'operator'})});
+    const end=performance.now()+1600;
+    while(performance.now()<end){ const j=await (await fetch(COLLECTOR+'/shot?session=fox&context='+ctx)).json(); addFrame(chanFrames, j.data, t0); n++; }
+    chanMeta.textContent='CHANNEL · '+n+' frames in '+Math.round(performance.now()-t0)+'ms · recorded to '+SERIES+' · held, so we kept seeing';
+  }catch(e){ chanMeta.textContent='command failed: '+e; }
+  sendBtn.disabled=false;
+};
+// replay → stop recording, fire the recorded series — request + channel TOGETHER.
+replayBtn.onclick = async ()=>{
+  replayBtn.disabled=true;
+  const meta=document.getElementById('replayMeta');
+  try{
+    if(recording){ await fetch(COLLECTOR+'/record?action=stop'); recording=false; }
+    const r=await (await fetch(COLLECTOR+'/replay-series?name='+SERIES,{method:'POST'})).json();
+    const ok=(r.results||[]).filter(x=>x.ok).length;
+    meta.textContent='replayed '+SERIES+' — fired '+r.fired+' frame(s) together ('+(r.results||[]).map(x=>x.physics+(x.ok?'✓':'✗')).join(' ')+') · '+ok+'/'+r.fired+' ok';
+  }catch(e){ meta.textContent='replay failed: '+e; }
+  replayBtn.disabled=false;
+};
 const tg = document.getElementById('toggle');
 tg.onclick = ()=>{
   channelOpen = !channelOpen;

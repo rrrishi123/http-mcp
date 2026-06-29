@@ -1,0 +1,23 @@
+{
+  "$comment": "Single source of truth for the wire's transport extent. Machine-readable; TRANSPORTS.md is the prose mirror; the http-mcp MCP `transports` tool returns this verbatim. Rule: raw bytes = wire; framing/routing/negotiation = adapter.",
+  "principle": "The wire is two atoms: http_request (CALL) and bidi_command (CHANNEL). Every transport reduces to one of these two modes. If a transport carries raw bytes with no application framing, it is wire. If it adds protocol semantics (framing, routing, negotiation), it is an adapter.",
+  "modes": {
+    "CALL": "one request, one response, then nothing. Atom: http_request (internal/httpx, net/http).",
+    "CHANNEL": "one long-lived bidirectional stream. Atom: bidi_command (internal/wsx, hand-rolled RFC6455). SSE/MJPEG are afferent-only (degenerate) channels that ride httpx."
+  },
+  "transports": [
+    { "name": "http",        "mode": "CALL",                  "where": "wire",    "atom": "http_request",  "status": "live",         "stdlib_only": true,  "note": "net/http. cmd/wire is a transparent witness proxy; cmd/mcp http_request." },
+    { "name": "websocket",   "mode": "CHANNEL",               "where": "wire",    "atom": "bidi_command",  "status": "live",         "stdlib_only": true,  "note": "internal/wsx hand-rolls the upgrade; cmd/channel holds the BiDi/CDP socket -> broker." },
+    { "name": "sse",         "mode": "CHANNEL (afferent)",    "where": "wire",    "atom": "http_request",  "status": "live",         "stdlib_only": true,  "note": "8 /feed: text/event-stream + http.Flusher; consumed by EventSource. Server-push, no client->server." },
+    { "name": "mjpeg",       "mode": "CHANNEL (afferent)",    "where": "wire",    "atom": "http_request",  "status": "live",         "stdlib_only": true,  "note": "8 /stream: multipart/x-mixed-replace. The afferent media plane." },
+    { "name": "unix_socket", "mode": "CALL|CHANNEL",          "where": "wire",    "atom": "http_request|bidi_command", "status": "live", "stdlib_only": true, "note": "Same CALL/CHANNEL bytes over a unix dialer instead of tcp. net.Dial(\"unix\",...). No framing -> wire, not adapter. URL: http+unix:///path.sock:/req or ws+unix:///path.sock:/req." },
+    { "name": "grpc",        "mode": "CALL|CHANNEL",          "where": "adapter", "provided_by": "adapters/grpc",   "status": "needs-adapter", "stdlib_only": false, "note": "unary=CALL, server-stream=CHANNEL over HTTP/2. The .proto + length-prefixed framing are capability-shaped -> adapter." },
+    { "name": "mqtt",        "mode": "CHANNEL",               "where": "adapter", "provided_by": "adapters/mqtt",   "status": "needs-adapter", "stdlib_only": false, "note": "Persistent broker channel. Topic hierarchy + QoS + retain are application routing -> adapter." },
+    { "name": "webrtc",      "mode": "CHANNEL",               "where": "adapter", "provided_by": "adapters/webrtc", "status": "needs-adapter", "stdlib_only": false, "note": "SDP/ICE/DTLS negotiation is capability-shaped (signaled over an httpx CALL); the resulting DataChannel/media is a wsx-style CHANNEL. The wire never sees SDP." }
+  ],
+  "agent_reading_order": [
+    "1. Call the http-mcp `transports` tool (or read this transports.json) -> the full 7->2 map in one shot.",
+    "2. Need a non-wire transport? Read adapters/<name>/capabilities.json for the dialect deep-dive.",
+    "3. Human or fallback? Read TRANSPORTS.md (prose + Mermaid), linked from every repo README."
+  ]
+}

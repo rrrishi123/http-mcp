@@ -148,6 +148,15 @@ func (s *server) tools() []any {
 				"required": []any{"ws_url", "method"},
 			},
 		},
+		map[string]any{
+			"name": "transports",
+			"description": "Return the wire's transport manifest: the full candidate list " +
+				"(HTTP, WebSocket, SSE, MJPEG, Unix socket, gRPC, MQTT, WebRTC) mapped onto the two atoms — " +
+				"http_request (CALL) and bidi_command (CHANNEL) — marking which live in the lean wire vs require " +
+				"an adapter, and why (raw bytes = wire; framing/routing/negotiation = adapter). This is the map any " +
+				"agent reads first to understand what the four-body system can reach. No inputs.",
+			"inputSchema": map[string]any{"type": "object", "properties": map[string]any{}, "required": []any{}},
+		},
 	}
 }
 
@@ -603,6 +612,9 @@ func (s *server) callTool(name string, args map[string]any) (any, bool) {
 
 	case "bidi_command":
 		return s.bidiCommand(args), false
+
+	case "transports":
+		return toolText(string(transportsJSON)), false
 	}
 	return toolErr("unknown tool: " + name), false
 }

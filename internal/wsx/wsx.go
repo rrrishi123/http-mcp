@@ -60,38 +60,75 @@ func Dial(rawURL string, timeout time.Duration) (*Conn, error) {
 	return DialWithHeaders(rawURL, timeout, nil)
 }
 
+// unixForm detects the wire's unix-socket channel URL and splits it into the
+// socket path and the request path. Form: ws+unix:///var/run/app.sock:/ws/path
+// (everything up to the first ":" after the authority is the socket path). A
+// unix socket is a transport, not a dialect, so it stays in the wire.
+func unixForm(rawURL string) (socket, reqPath string, ok bool) {
+	for _, p := range []string{"ws+unix://", "wss+unix://", "unix://"} {
+		if strings.HasPrefix(rawURL, p) {
+			rest := strings.TrimPrefix(rawURL, p)
+			if i := strings.Index(rest, ":"); i >= 0 {
+				req := rest[i+1:]
+				if !strings.HasPrefix(req, "/") {
+					req = "/" + req
+				}
+				return rest[:i], req, true
+			}
+			return rest, "/", true
+		}
+	}
+	return "", "", false
+}
+
 // DialWithHeaders opens a WebSocket, adding caller-supplied request headers to
 // the opening handshake. Some channels gate the UPGRADE itself on a header
 // (e.g. LambdaTest /playwright wants x-playwright-browser, else 400) — these are
 // normal WS upgrade headers, not protocol; wsx stays a generic channel atom. The
 // headers wsx owns (Host/Upgrade/Connection/Sec-WebSocket-*) cannot be overridden.
 func DialWithHeaders(rawURL string, timeout time.Duration, headers map[string]string) (*Conn, error) {
-	u, err := url.Parse(rawURL)
-	if err != nil {
-		return nil, err
-	}
-	host := u.Host
-	switch u.Scheme {
-	case "ws":
-		if !strings.Contains(host, ":") {
-			host += ":80"
-		}
-	case "wss":
-		if !strings.Contains(host, ":") {
-			host += ":443"
-		}
-	default:
-		return nil, fmt.Errorf("wsx: unsupported scheme %q (want ws or wss)", u.Scheme)
-	}
-
 	var raw net.Conn
-	if u.Scheme == "wss" {
-		raw, err = tls.DialWithDialer(&net.Dialer{Timeout: timeout}, "tcp", host, &tls.Config{ServerName: hostOnly(host)})
+	var hostHdr, path string
+
+	// Unix-socket channel: the same CHANNEL frames over a different address
+	// family. A unix socket carries no framing of its own, so it is wire, not an
+	// adapter. Form: ws+unix:///var/run/app.sock:/ws/path
+	if socket, reqPath, ok := unixForm(rawURL); ok {
+		var err error
+		if raw, err = net.DialTimeout("unix", socket, timeout); err != nil {
+			return nil, err
+		}
+		hostHdr, path = "unix", reqPath
 	} else {
-		raw, err = net.DialTimeout("tcp", host, timeout)
+		u, err := url.Parse(rawURL)
+		if err != nil {
+			return nil, err
+		}
+		host := u.Host
+		switch u.Scheme {
+		case "ws":
+			if !strings.Contains(host, ":") {
+				host += ":80"
+			}
+		case "wss":
+			if !strings.Contains(host, ":") {
+				host += ":443"
+			}
+		default:
+			return nil, fmt.Errorf("wsx: unsupported scheme %q (want ws, wss, or ws+unix)", u.Scheme)
+		}
+		if u.Scheme == "wss" {
+			raw, err = tls.DialWithDialer(&net.Dialer{Timeout: timeout}, "tcp", host, &tls.Config{ServerName: hostOnly(host)})
+		} else {
+			raw, err = net.DialTimeout("tcp", host, timeout)
+		}
+		if err != nil {
+			return nil, err
+		}
+		hostHdr, path = u.Host, u.RequestURI()
 	}
-	if err != nil {
-		return nil, err
+	if path == "" {
+		path = "/"
 	}
 	raw.SetDeadline(time.Now().Add(timeout))
 
@@ -100,10 +137,6 @@ func DialWithHeaders(rawURL string, timeout time.Duration, headers map[string]st
 	var nonce [16]byte
 	rand.Read(nonce[:])
 	key := base64.StdEncoding.EncodeToString(nonce[:])
-	path := u.RequestURI()
-	if path == "" {
-		path = "/"
-	}
 	var extra strings.Builder
 	for k, v := range headers {
 		switch strings.ToLower(strings.TrimSpace(k)) {
@@ -113,7 +146,7 @@ func DialWithHeaders(rawURL string, timeout time.Duration, headers map[string]st
 		extra.WriteString(k + ": " + v + "\r\n")
 	}
 	req := "GET " + path + " HTTP/1.1\r\n" +
-		"Host: " + u.Host + "\r\n" +
+		"Host: " + hostHdr + "\r\n" +
 		"Upgrade: websocket\r\n" +
 		"Connection: Upgrade\r\n" +
 		"Sec-WebSocket-Key: " + key + "\r\n" +

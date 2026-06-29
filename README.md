@@ -41,7 +41,31 @@ Two modes, two atoms. Everything else is a *dialect* (of a mode) or a *direction
 
 ## Transport map — every transport ⇒ 2 modes ⇒ which arm owns it
 
-![Transport map — modes](docs/diagrams/03-transport-map-modes.png)
+```mermaid
+flowchart LR
+  HTTP["HTTP"] --> CALL
+  GRPCU["gRPC-unary"] --> CALL
+  UNIX["Unix socket"] --> CALL
+  WS["WebSocket / CDP / BiDi"] --> CHAN
+  GRPCS["gRPC-stream"] --> CHAN
+  MQTT["MQTT pub/sub"] --> CHAN
+  RTCD["WebRTC (data)"] --> CHAN
+  UNIX --> CHAN
+  SSE["SSE"] --> OBS
+  RTCV["WebRTC (video)"] --> OBS
+  subgraph MODES["the only true shapes (the wire owns shape only)"]
+    CALL["CALL · http_request"]
+    CHAN["CHANNEL · bidi_command"]
+    OBS["OBSERVE · afferent-only (sub-mode of CHANNEL)"]
+  end
+  CALL --> WIRE["WIRE owns shape"]
+  CHAN --> WIRE
+  OBS --> W8["8 · witness owns the afferent leg"]
+  classDef w fill:#e6f0ff,stroke:#4477cc,color:#113;
+  classDef a fill:#fff0e6,stroke:#cc7744,color:#311;
+  class CALL,CHAN,WIRE w;
+  class OBS,W8 a;
+```
 
 | Transport | Mode | Owner | Where |
 |---|---|---|---|
@@ -76,7 +100,28 @@ without driving any of them. Two strictly separate channels:
 - **Aperture-control** (8 throttles itself, never the target): sampling rate · event filtering · coalescing · circuit-breaker (unsubscribe a noisy context) · byte-budgeted eviction. 8 applies the same controls to its *own* consumption so the witness never starves what it watches.
 - **The boundary:** 8 can recommend recycling a leaking tab → pilot decides → wire executes. 8 itself **never** navigates or commands a target. It recommends; it does not act.
 
-![Data plane — what each arm stores](docs/diagrams/04-data-plane.png)
+```mermaid
+flowchart TB
+  subgraph WIRE["WIRE · http-mcp — stateless per call"]
+    A1["two atoms: http_request / bidi_command"]
+    A2["route-priors (specs/) · auth_slot injection"]
+  end
+  subgraph WITNESS["8 · WITNESS — afferent only"]
+    B1["per-tab mem/CPU/events — ambient ~10s"]
+    B2["neutral trace: NDJSON Frame<br/>seq · ts · session · mode · dir · auth_slot"]
+  end
+  subgraph HOST["pilot · HOST"]
+    C1["OODA Orient+Decide · local model · shell/fs"]
+  end
+  subgraph ADP["adapters · ARMS — tenant fork"]
+    D1["specs · app inventory · runner"]
+    D2["replayable provider spec"]
+  end
+  B2 -->|"record → replay contract"| D2
+  C1 -->|decides| A1
+  B1 -.observes.-> A1
+  D1 -->|composes| A1
+```
 
 ## Record & replay — a fork becomes a suite
 
@@ -94,9 +139,48 @@ RECORD  →  SPEC  →  REPLAY  →  SUITE
 
 ## Architecture views
 
-![C4 container](docs/diagrams/01-c4-container.png)
+**System & containers** — the four arms, the agent above, the targets below:
 
-![C4 component](docs/diagrams/02-c4-component.png)
+```mermaid
+flowchart TB
+  Agent(["AI agent / operator"]) --> HOST
+  subgraph SYS["The Wire — four-arm system"]
+    HOST["pilot · HOST<br/>OODA decide · local model"]
+    WITNESS["8 · WITNESS<br/>observe all tabs, drive none"]
+    WIRE["http-mcp · WIRE<br/>2 atoms + auth + probe/harvest"]
+    ADP["adapters · ARMS<br/>per-provider spec / runner / replay"]
+  end
+  HOST --> WIRE
+  ADP --> WIRE
+  ADP --> HOST
+  WITNESS -.observe.-> WIRE
+  WIRE --> BR[("Browser · BiDi/CDP")]
+  WIRE --> HUB[("WebDriver/Appium hub · cloud provider")]
+```
+
+**Inside the WIRE** — components of the narrow waist:
+
+```mermaid
+flowchart TB
+  subgraph WIRE["http-mcp · WIRE internals"]
+    MCP["MCP server — stdio JSON-RPC 2.0"]
+    HX["http_request → internal/httpx (CALL)"]
+    WX["bidi_command → internal/wsx (CHANNEL)"]
+    DISC["discover — re-perceive a live hub"]
+    TR["transports — the 7→2 manifest"]
+    AUTH["auth-injection · auth_slot · profiles"]
+    PROBE["probe / harvest · route-priors (specs/)"]
+  end
+  MCP --> HX
+  MCP --> WX
+  MCP --> DISC
+  MCP --> TR
+  HX --> AUTH
+  WX --> AUTH
+  HX -->|"tcp / tls / unix"| NET[("net/http · net")]
+  WX -->|"ws / wss / unix"| NET
+  DISC --> PROBE
+```
 
 ## Deployment model — product vs client (two identities)
 
@@ -129,3 +213,11 @@ Orients/Decides, witness Observes; **Kalman observability** — you cannot contr
 
 > These PRs are the **territory map**. They are intentionally not merged — they accumulate until the
 > four-arm picture is complete, then become the clean first commit of each repo.
+
+---
+
+## Transports — the wire's extent (7 → 2)
+
+The full transport candidate list — **HTTP, WebSocket, SSE, MJPEG, Unix socket, gRPC, MQTT, WebRTC** — all reduce to the wire's **two atoms**: `http_request` (CALL) and `bidi_command` (CHANNEL). Raw bytes ⇒ wire; framing/routing/negotiation ⇒ adapter.
+
+→ See **[TRANSPORTS.md](./TRANSPORTS.md)** for the full map (prose + Mermaid). Machine-readable: the http-mcp MCP **`transports`** tool returns [`transports.json`](https://github.com/rrrishi123/http-mcp/blob/v.0.0.1/cmd/mcp/transports.json) verbatim — the map any agent reads first.

@@ -3,8 +3,10 @@
 package httpx
 
 import (
+	"context"
 	"encoding/base64"
 	"io"
+	"net"
 	"net/http"
 	"strings"
 	"time"
@@ -55,10 +57,51 @@ func (a Auth) Apply(r *Request) {
 	}
 }
 
+// unixScheme detects the wire's unix-socket form and splits it into the socket
+// path and the rewritten http URL. A unix socket is not a new mode — it is the
+// same CALL bytes over a different address family — so it lives in the wire, not
+// an adapter. Form: http+unix:///var/run/app.sock:/v1/status
+// (everything up to the first ":" after the authority is the socket path).
+func unixScheme(rawURL string) (socket, httpURL string, ok bool) {
+	for _, p := range []string{"http+unix://", "https+unix://", "unix://"} {
+		if strings.HasPrefix(rawURL, p) {
+			rest := strings.TrimPrefix(rawURL, p)
+			i := strings.Index(rest, ":")
+			if i < 0 { // no request path -> root
+				return rest, "http://unix/", true
+			}
+			req := rest[i+1:]
+			if !strings.HasPrefix(req, "/") {
+				req = "/" + req
+			}
+			return rest[:i], "http://unix" + req, true
+		}
+	}
+	return "", "", false
+}
+
+// unixClient dials the given unix socket for every request, ignoring the
+// placeholder host. Stdlib only — net.Dial("unix", ...).
+func unixClient(socket string, timeout time.Duration) *http.Client {
+	return &http.Client{
+		Timeout: timeout,
+		Transport: &http.Transport{
+			DialContext: func(ctx context.Context, _, _ string) (net.Conn, error) {
+				return (&net.Dialer{Timeout: timeout}).DialContext(ctx, "unix", socket)
+			},
+		},
+	}
+}
+
 // Do makes the call. That is the entire job.
 func Do(client *http.Client, r Request) (*Response, error) {
 	if client == nil {
 		client = &http.Client{Timeout: 60 * time.Second}
+	}
+	// Unix-socket transport: same CALL, different address family. Wire, not adapter.
+	if socket, httpURL, ok := unixScheme(r.URL); ok {
+		client = unixClient(socket, 60*time.Second)
+		r.URL = httpURL
 	}
 	var body io.Reader
 	if r.Body != "" {
