@@ -93,15 +93,22 @@ func (h *hub) read() {
 		}
 		// an event — fan out, non-blocking (a slow consumer never stalls the wire)
 		atomic.AddInt64(&h.evtCount, 1)
-		h.mu.Lock()
-		for _, sc := range h.subs {
-			select {
-			case sc <- raw:
-			default:
-			}
-		}
-		h.mu.Unlock()
+		h.fanout(raw)
 	}
+}
+
+// fanout pushes one frame to every /events subscriber, non-blocking so a slow
+// consumer never stalls the wire. Used for both afferent events (from read) and
+// the efferent command-echo (from handleCommand).
+func (h *hub) fanout(raw json.RawMessage) {
+	h.mu.Lock()
+	for _, sc := range h.subs {
+		select {
+		case sc <- raw:
+		default:
+		}
+	}
+	h.mu.Unlock()
 }
 
 func (h *hub) shutdown() {
@@ -148,6 +155,22 @@ func (h *hub) handleCommand(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	atomic.AddInt64(&h.cmdCount, 1)
+
+	// WITNESS ECHO (the honest completion of the witness model): fan the EFFERENT
+	// command out to /events too, so 8 — or any observer — sees every command on the
+	// wire, not only its own /run path. A context-less agent using http-mcp raw is
+	// thus fully visible. The broker stays STATELESS: this is a pass-through
+	// notification (not a response; the id is preserved but delivered separately),
+	// tagged origin = "wire" (an agent drove the wire) or "witness" (the observer's
+	// own afferent polling, via ?origin=witness) so 8 filters its own traffic and no
+	// self-loop forms.
+	origin := r.URL.Query().Get("origin")
+	if origin == "" {
+		origin = "wire"
+	}
+	if echo, err := json.Marshal(map[string]any{"__cmd": true, "origin": origin, "id": id, "method": in.Method, "params": in.Params}); err == nil {
+		h.fanout(json.RawMessage(echo))
+	}
 
 	timeout := 30 * time.Second
 	if q := r.URL.Query().Get("timeout_ms"); q != "" {
