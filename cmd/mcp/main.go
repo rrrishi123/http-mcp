@@ -13,6 +13,7 @@
 package main
 
 import (
+	"path/filepath"
 	"bufio"
 	"encoding/json"
 	"fmt"
@@ -301,6 +302,25 @@ func applyChannelAuth(rawURL, user, key string) (string, error) {
 	return u.String(), nil
 }
 
+// specsDir resolves the specs/ directory — binary-adjacent first, then
+// the source-tree fallback so the embedded prior files are found regardless
+// of where the binary was built. No more hardcoded rishirajs Desktop path.
+func specsDir() string {
+	if exe, err := os.Executable(); err == nil {
+		if d := filepath.Join(filepath.Dir(exe), "specs"); dirExists(d) {
+			return d
+		}
+		if d := filepath.Join(filepath.Dir(exe), "..", "..", "specs"); dirExists(d) {
+			return d
+		}
+	}
+	if d := "specs"; dirExists(d) {
+		return d
+	}
+	return ""
+}
+func dirExists(p string) bool { fi, e := os.Stat(p); return e == nil && fi.IsDir() }
+
 // heldChannels probes the conventional broker ports for live HELD channels and
 // surfaces each one as an entry in discover's cartesian product of protocols —
 // alongside specs/ (HTTP route priors) and Appium self-enumeration. No new tool:
@@ -325,7 +345,7 @@ func heldChannels(client *http.Client) []map[string]any {
 		Events map[string]any `json:"events"`
 		Verify map[string]any `json:"verify"`
 	}
-	if data, derr := os.ReadFile("/Users/rishirajs/Desktop/repos/http-mcp/specs/channel/bidi@1.0.json"); derr == nil {
+	if data, derr := os.ReadFile(specsDir()+"/channel/bidi@1.0.json"); derr == nil {
 		json.Unmarshal(data, &chanSpec)
 	}
 
@@ -411,7 +431,7 @@ func (s *server) discover(args map[string]any) any {
 
 	// Layer 4: 404-vs-405 bogus-session probe against stored specs.
 	// Uses a fake UUID — does NOT need a real session, always runs.
-	specsDir := "/Users/rishirajs/Desktop/repos/http-mcp/specs"
+	specsDir := specsDir()
 	specFilter := str(args["spec"])
 	probeResults := probeSpecs(s.client, hub, specsDir, specFilter)
 	if probeResults != nil {
