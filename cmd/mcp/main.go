@@ -104,7 +104,7 @@ func (s *server) tools() []any {
 					"method":     str("HTTP method (GET, POST, DELETE, ...)"),
 					"url":        str("Full URL to call."),
 					"headers":    map[string]any{"type": "object", "description": "Header name -> value.", "additionalProperties": map[string]any{"type": "string"}},
-					"body":       str("Request body (raw string; JSON by default)."),
+					"body":       str("Request body: a raw string, OR a JSON object (e.g. {\"method\":...,\"params\":{}}) which is sent as JSON — both work."),
 					"auth":       map[string]any{"type": "object", "description": "Optional auth. Either {profile: \"prod:adminltqa\"} to resolve a Basic credential from the environment (LT_USERNAME/LT_ACCESS_KEY) or a gitignored auth/<profile>.json — the secret never passes through here — or a literal {type: basic|bearer|apikey, user, key, header}."},
 					"timeout_ms": map[string]any{"type": "integer", "description": "Optional. Give up after this many ms (default ~30s). Raise it for slow cloud session creation — Appium/Espresso/XCUITest builds take tens of seconds."},
 				},
@@ -569,13 +569,33 @@ func str(v any) string {
 	return ""
 }
 
+// bodyStr accepts the request body as a raw string OR a JSON object. The discover tool
+// hands its examples back with the body as an object ({"method":...,"params":{}}), and
+// models naturally pass it that way — so an object is marshaled to JSON here. Without
+// this, str() returned "" for a map and the wire sent an EMPTY body (the broker then
+// answered 400 "method is required") — which is exactly why pilot couldn't drive the
+// channel / see the Firefox tabs.
+func bodyStr(v any) string {
+	switch b := v.(type) {
+	case nil:
+		return ""
+	case string:
+		return b
+	default:
+		if bs, err := json.Marshal(b); err == nil {
+			return string(bs)
+		}
+		return ""
+	}
+}
+
 func (s *server) callTool(name string, args map[string]any) (any, bool) {
 	switch name {
 	case "http_request":
 		req := httpx.Request{
 			Method: str(args["method"]),
 			URL:    str(args["url"]),
-			Body:   str(args["body"]),
+			Body:   bodyStr(args["body"]),
 		}
 		if h, ok := args["headers"].(map[string]any); ok {
 			req.Headers = map[string]string{}
