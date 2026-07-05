@@ -13,7 +13,6 @@
 package main
 
 import (
-	"path/filepath"
 	"bufio"
 	"encoding/json"
 	"fmt"
@@ -21,6 +20,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -345,7 +345,7 @@ func heldChannels(client *http.Client) []map[string]any {
 		Events map[string]any `json:"events"`
 		Verify map[string]any `json:"verify"`
 	}
-	if data, derr := os.ReadFile(specsDir()+"/channel/bidi@1.0.json"); derr == nil {
+	if data, derr := os.ReadFile(specsDir() + "/channel/bidi@1.0.json"); derr == nil {
 		json.Unmarshal(data, &chanSpec)
 	}
 

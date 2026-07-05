@@ -4,3 +4,6 @@ auth/*.json
 TERRITORY.md
 .bin/
 http-mcp
+
+# gitignored LT credential files (never commit)
+/auth/*.json
