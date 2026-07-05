@@ -387,17 +387,25 @@ func heldChannels(client *http.Client) []map[string]any {
 			methods[name] = map[string]any{"does": m.Does, "example_http_request": map[string]any{"tool": "http_request", "method": "POST", "url": cmdURL, "body": map[string]any{"method": name, "params": params}}}
 		}
 
+		// live lease registry — who already holds which tab (many agents share
+		// this one Firefox; your private session is a leased tab, not a 2nd session).
+		var leases map[string]any
+		if lr, lerr := httpx.Do(client, httpx.Request{Method: "GET", URL: broker + "/leases"}); lerr == nil {
+			json.Unmarshal([]byte(lr.Body), &leases)
+		}
+
 		out = append(out, map[string]any{
 			"broker":          broker,
 			"protocol":        chanSpec.Protocol,
 			"spec":            "specs/channel/bidi@" + chanSpec.Version,
-			"health":          health,
+			"health":          health, // carries session_illusion + invariants (incl. XWayland)
 			"contexts":        contexts,
+			"leases":          leases,
 			"methods":         methods,
 			"events":          chanSpec.Events,
 			"verify":          chanSpec.Verify,
-			"events_endpoint": map[string]any{"tool": "http_request", "method": "GET", "url": broker + "/events", "note": "SSE; subscribe first via session.subscribe"},
-			"how":             "ONE socket, broker-held — do NOT bidi_command it (a 2nd ws is refused). http_request the examples; browsingContext.create gives you your own tab; pass that context in later calls.",
+			"events_endpoint": map[string]any{"tool": "http_request", "method": "GET", "url": broker + "/events", "note": "SSE; ?context=<your-ctx> demuxes to only your tab's frames"},
+			"how":             "ONE shared socket (a 2nd ws / session.new is refused). Many agents share this Firefox. Claim your own tab: http_request POST " + cmdURL + ` {"claim":"<your-agent-id>"} -> {context}. Then send {"agent":"<id>",method,params} and the broker injects YOUR tab (no fallback to contexts[0]). {"heartbeat":"<id>"} keeps it; {"release":"<id>"} closes it. NEVER session.end/DeleteSession (kills everyone). See health.invariants — Firefox is XWayland; never relaunch native-Wayland.`,
 		})
 	}
 	return out
