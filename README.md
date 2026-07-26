@@ -2,6 +2,7 @@
 
 > Part of **The Wire** — a four-arm system for protocol-agnostic test automation with record & replay.
 > **This repo is the http-mcp — the WIRE** — the two modes (CALL/CHANNEL) + auth-injection + probe/harvest. Zero provider awareness.
+> **The four arms:** [http-mcp](https://github.com/rrrishi123/http-mcp) (WIRE) · [8](https://github.com/rrrishi123/8) (WITNESS) · [pilot](https://github.com/rrrishi123/pilot) (HOST) · [adapters](https://github.com/rrrishi123/adapters) (ARMS)
 
 ---
 
