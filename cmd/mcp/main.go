@@ -349,6 +349,33 @@ func heldChannels(client *http.Client) []map[string]any {
 		json.Unmarshal(data, &chanSpec)
 	}
 
+	// WITNESS self-description: if a witness (a collector) is reachable, report —
+	// on the SAME surface an agent already reads to find the atoms — that this
+	// wire is WITNESSED: every command is recorded + replayable, and firing
+	// through the witness returns the reafference in the same call. So an agent
+	// finds 8's record/replay the way it found bidi_command, and uses it instead
+	// of hand-rolling (gen-2 wrote its own replay script because nothing said
+	// this). This is the design's "every efferent echoed for the witness", made
+	// self-evident to the agent — not a rule, just the fact, where it's looking.
+	// Guarded: only attached when a witness actually answers; http-mcp stays
+	// standalone (no witness = no witness section).
+	witnessURL := os.Getenv("HTTP_MCP_WITNESS")
+	if witnessURL == "" {
+		witnessURL = "http://127.0.0.1:7070"
+	}
+	witnessURL = strings.TrimRight(witnessURL, "/")
+	var witness map[string]any
+	if hr, werr := httpx.Do(client, httpx.Request{Method: "GET", URL: witnessURL + "/health"}); werr == nil && hr.Status == 200 && strings.Contains(hr.Body, "alive") {
+		witness = map[string]any{
+			"at":          witnessURL,
+			"law":         "every command through this wire is echoed to the witness — RECORDED and REPLAYABLE. You do not need to build your own replay; it already exists here.",
+			"reafference": "Fire through the witness instead of the broker directly (POST " + witnessURL + "/run?session=<id> for a channel command · " + witnessURL + "/fetch for a call · " + witnessURL + "/act for a drive) and the response carries an X-8-Witness header — 'seen · replayable frame #N · gaze→<ctx>' — proof you were seen plus a replay handle, in the same call.",
+			"ledger":      map[string]any{"tool": "http_request", "method": "GET", "url": witnessURL + "/requests?n=10", "note": "the witness ledger — every recent op, each replayable"},
+			"record":      map[string]any{"tool": "http_request", "method": "GET", "url": witnessURL + "/record?action=start&name=my-run", "then": "…drive…, then " + witnessURL + "/record?action=stop", "note": "record a series while you drive, then replay it whole (seat-attributed)"},
+			"replay":      map[string]any{"tool": "http_request", "method": "POST", "url": witnessURL + "/replay-series?name=my-run", "note": "re-fire a recorded series on demand — no hand-rolled script needed"},
+		}
+	}
+
 	for port := 4445; port <= 4452; port++ {
 		broker := fmt.Sprintf("http://127.0.0.1:%d", port)
 		hr, err := httpx.Do(client, httpx.Request{Method: "GET", URL: broker + "/health"})
@@ -398,6 +425,7 @@ func heldChannels(client *http.Client) []map[string]any {
 			"verify":          chanSpec.Verify,
 			"events_endpoint": map[string]any{"tool": "http_request", "method": "GET", "url": broker + "/events", "note": "SSE; subscribe first via session.subscribe"},
 			"how":             "ONE socket, broker-held — do NOT bidi_command it (a 2nd ws is refused). http_request the examples; browsingContext.create gives you your own tab; pass that context in later calls.",
+			"witnessed_by":    witness, // nil if no witness reachable; else how this wire is recorded + replayable
 		})
 	}
 	return out
