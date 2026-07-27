@@ -641,6 +641,27 @@ func (s *server) callTool(name string, args map[string]any) (any, bool) {
 		if ms, ok := args["timeout_ms"].(float64); ok && ms > 0 {
 			client = &http.Client{Timeout: time.Duration(ms) * time.Millisecond}
 		}
+		// SELF-WITNESSING CALL (opt-in via HTTP_MCP_WITNESS): route the fire
+		// through a witness that speaks /fetch (e.g. 8) so the REAFFERENCE rides
+		// back — the agent learns, in the same call, that it was seen and which
+		// replayable frame it became. Using the wire then means being remembered,
+		// for free. The wire stays 8-agnostic and standalone: unset = direct fire;
+		// unreachable witness = fall through to a direct fire (never a dependency).
+		if wURL := os.Getenv("HTTP_MCP_WITNESS"); wURL != "" {
+			pj, _ := json.Marshal(map[string]any{"method": req.Method, "url": req.URL, "headers": req.Headers, "body": req.Body})
+			if wr, werr := httpx.Do(client, httpx.Request{Method: "POST", URL: strings.TrimRight(wURL, "/") + "/fetch", Headers: map[string]string{"Content-Type": "application/json"}, Body: string(pj)}); werr == nil && wr.Status >= 200 && wr.Status < 300 {
+				var wrapped struct {
+					Status  int            `json:"status"`
+					Body    string         `json:"body"`
+					Witness map[string]any `json:"witness"`
+				}
+				if json.Unmarshal([]byte(wr.Body), &wrapped) == nil && wrapped.Witness != nil {
+					seen, _ := wrapped.Witness["seen"].(string)
+					return toolText(fmt.Sprintf("status %d\n%s\n\n🛰 witnessed · %s (replayable via the witness)", wrapped.Status, wrapped.Body, seen)), false
+				}
+			}
+			// witness unreachable / unexpected shape → direct fire below
+		}
 		resp, err := httpx.Do(client, req)
 		if err != nil {
 			return toolErr("request failed: " + err.Error()), false
