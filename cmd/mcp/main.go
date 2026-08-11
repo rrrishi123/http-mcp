@@ -21,6 +21,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -158,7 +159,111 @@ func (s *server) tools() []any {
 				"agent reads first to understand what the four-body system can reach. No inputs.",
 			"inputSchema": map[string]any{"type": "object", "properties": map[string]any{}, "required": []any{}},
 		},
+		map[string]any{
+			// THE PLACEHOLDER / POLYMORPHIC TOOL (#26, 2026-08-11). The lean answer
+			// to 'the wire isn't evident': not a named tool per capability (that road
+			// is a fat SDK and falsifies probe-don't-enumerate), but ONE tool that
+			// BECOMES any tool by COMPOSING the two atoms. A 'tool' is just a named
+			// composition of http_request / bidi_command / discover — this runs one
+			// inline, threading ${N.path} from earlier steps into later ones, and
+			// returns every step's result. Reach anything without enumerating anything.
+			"name": "become",
+			"description": "Become ANY tool by composing the wire's primitives in one call — the lean alternative to a named tool per framework. Give a recipe: an ordered list of steps, each {tool: \"http_request\"|\"bidi_command\"|\"discover\", args: {...}, id?}. Reference an earlier step's result anywhere in a later step's args with a template string like \"${0.result.context}\" or \"${create.result.context}\" (by index or id). The wire runs the whole composition and returns each step's result. Use this to enact a capability (open+drive a tab, probe+then+call, a multi-step flow) without asking for a dedicated tool — a tool is a composition of atoms, and this is how you compose one.",
+			"inputSchema": map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"recipe": map[string]any{"type": "array", "description": "Ordered steps: [{tool, args, id?}, ...]. Each step is one primitive call; ${idx.path} or ${id.path} in a later step's args resolves to an earlier step's result."},
+				},
+				"required": []any{"recipe"},
+			},
+		},
 	}
+}
+
+// resolveTpl recursively replaces "${key.a.b}" strings with values navigated from
+// prior step results — the data-flow between composed steps.
+func resolveTpl(v any, prior map[string]any) any {
+	switch t := v.(type) {
+	case string:
+		if len(t) > 3 && t[0] == '$' && t[1] == '{' && t[len(t)-1] == '}' {
+			path := strings.Split(t[2:len(t)-1], ".")
+			var cur any = prior[path[0]]
+			for _, p := range path[1:] {
+				if m, ok := cur.(map[string]any); ok {
+					cur = m[p]
+				} else {
+					return t // unresolved — leave the template literal (visible in the receipt)
+				}
+			}
+			return cur
+		}
+		return t
+	case map[string]any:
+		out := map[string]any{}
+		for k, x := range t {
+			out[k] = resolveTpl(x, prior)
+		}
+		return out
+	case []any:
+		out := make([]any, len(t))
+		for i, x := range t {
+			out[i] = resolveTpl(x, prior)
+		}
+		return out
+	}
+	return v
+}
+
+// extractVal pulls the inner JSON value out of a tool result (toolText wraps it in
+// content[].text) so ${N.path} can navigate the real data, not the MCP envelope.
+func extractVal(res any) any {
+	m, ok := res.(map[string]any)
+	if !ok {
+		return res
+	}
+	if content, ok := m["content"].([]any); ok && len(content) > 0 {
+		if blk, ok := content[0].(map[string]any); ok {
+			if txt, ok := blk["text"].(string); ok {
+				var parsed any
+				if json.Unmarshal([]byte(txt), &parsed) == nil {
+					return parsed
+				}
+				return txt
+			}
+		}
+	}
+	return m
+}
+
+// become — the polymorphic composer: run a recipe of primitive steps, thread
+// results between them, return each step's outcome. One tool, any tool.
+func (s *server) become(args map[string]any) any {
+	recipe, ok := args["recipe"].([]any)
+	if !ok {
+		return toolErr("become needs a recipe: [{tool, args, id?}, ...]")
+	}
+	prior := map[string]any{}
+	steps := []any{}
+	for i, raw := range recipe {
+		step, _ := raw.(map[string]any)
+		tool := str(step["tool"])
+		if tool == "" {
+			return toolErr(fmt.Sprintf("step %d has no tool", i))
+		}
+		sa, _ := resolveTpl(step["args"], prior).(map[string]any)
+		if sa == nil {
+			sa = map[string]any{}
+		}
+		res, _ := s.callTool(tool, sa)
+		val := extractVal(res)
+		prior[strconv.Itoa(i)] = map[string]any{"result": val}
+		if id := str(step["id"]); id != "" {
+			prior[id] = map[string]any{"result": val}
+		}
+		steps = append(steps, map[string]any{"step": i, "tool": tool, "result": val})
+	}
+	out, _ := json.Marshal(map[string]any{"became": "a composition of " + strconv.Itoa(len(steps)) + " atom steps", "steps": steps})
+	return toolText(string(out))
 }
 
 // bidiCommand opens the channel, produces one command, and returns the response
@@ -704,6 +809,9 @@ func (s *server) callTool(name string, args map[string]any) (any, bool) {
 
 	case "transports":
 		return toolText(string(transportsJSON)), false
+
+	case "become":
+		return s.become(args), false
 	}
 	return toolErr("unknown tool: " + name), false
 }
