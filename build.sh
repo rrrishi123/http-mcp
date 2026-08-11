@@ -8,6 +8,8 @@ set -euo pipefail
 cd "$(dirname "$0")"
 mkdir -p .bin
 go build -o .bin/http-mcp ./cmd/mcp      # the MCP server (stdio) — the wire agents launch
+go build -o http-mcp      ./cmd/mcp      # #27: ALSO write the CONFIG path (~/.claude.json runs ./http-mcp) so
+                                         # `./build.sh` + /reconnect deploys what was just built, not a stale binary
 go build -o .bin/wire     ./cmd/wire     # the HTTP witness (:4724)
 go build -o .bin/channel  ./cmd/channel  # the BiDi broker
 go build -o .bin/harvest  ./cmd/harvest
