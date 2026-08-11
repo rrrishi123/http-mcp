@@ -15,4 +15,5 @@ go build -o .bin/channel  ./cmd/channel  # the BiDi broker
 go build -o .bin/harvest  ./cmd/harvest
 go build -o .bin/probe    ./cmd/probe
 go build -o .bin/session  ./cmd/session
+go build -o .bin/eight     ./cmd/eight  # #38 the single-command dispatcher: `eight <atom>` over all bodies
 echo "built: $(ls .bin/ | tr '\n' ' ')"
