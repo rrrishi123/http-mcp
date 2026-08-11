@@ -158,7 +158,57 @@ func (s *server) tools() []any {
 				"agent reads first to understand what the four-body system can reach. No inputs.",
 			"inputSchema": map[string]any{"type": "object", "properties": map[string]any{}, "required": []any{}},
 		},
+		map[string]any{
+			// EVIDENT BROWSER TOOL (2026-08-11): fresh agents reach for playwright's
+			// browser_navigate because its NAME screams browser-automation, and spin
+			// their OWN unwitnessed Chrome. This tool is named to WIN that race and to
+			// drive the browser that already exists and is already watched — so the
+			// witnessed browser is easier to reach than a fresh one.
+			"name": "open_url",
+			"description": "Open a URL in the ALREADY-RUNNING, WITNESSED browser on this host — do NOT launch a new browser (no playwright/puppeteer). This drives the existing Firefox that the 8 witness observes: the tab opens where a human can see it, and every action is recorded and replayable. Returns the new tab's context id; then drive it with bidi_command / http_request against the same broker. Prefer this over any tool that starts its own browser.",
+			"inputSchema": map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"url":    str("The URL to open in the witnessed browser."),
+					"broker": str("Optional broker/command endpoint (default http://127.0.0.1:4445 — the local witnessed Firefox)."),
+				},
+				"required": []any{"url"},
+			},
+		},
 	}
+}
+
+// openURL drives the ALREADY-RUNNING witnessed browser: create a tab on the local
+// broker, navigate it, return its context id. No new browser is launched — this is
+// the evident alternative to playwright's browser_navigate.
+func (s *server) openURL(args map[string]any) any {
+	url, _ := args["url"].(string)
+	if url == "" {
+		return toolErr("open_url needs a url")
+	}
+	broker, _ := args["broker"].(string)
+	if broker == "" {
+		broker = "http://127.0.0.1:4445"
+	}
+	cmd := broker + "/command"
+	hdr := map[string]string{"Content-Type": "application/json"}
+	cr, err := httpx.Do(s.client, httpx.Request{Method: "POST", URL: cmd, Headers: hdr, Body: `{"method":"browsingContext.create","params":{"type":"tab"}}`})
+	if err != nil {
+		return toolErr("open_url: no witnessed browser reachable at " + broker + " — is it running? " + err.Error())
+	}
+	var parsed struct {
+		Result struct {
+			Context string `json:"context"`
+		} `json:"result"`
+	}
+	json.Unmarshal([]byte(cr.Body), &parsed)
+	ctx := parsed.Result.Context
+	if ctx == "" {
+		return toolErr("open_url: could not create a tab on the witnessed browser at " + broker + " (" + cr.Body + ")")
+	}
+	nav := fmt.Sprintf(`{"method":"browsingContext.navigate","params":{"context":%q,"url":%q,"wait":"interactive"}}`, ctx, url)
+	httpx.Do(s.client, httpx.Request{Method: "POST", URL: cmd, Headers: hdr, Body: nav})
+	return toolText(fmt.Sprintf(`{"opened":%q,"context":%q,"note":"opened in the WITNESSED browser — drive it via bidi_command/http_request against %s/command with this context; it is recorded and replayable."}`, url, ctx, broker))
 }
 
 // bidiCommand opens the channel, produces one command, and returns the response
@@ -704,6 +754,9 @@ func (s *server) callTool(name string, args map[string]any) (any, bool) {
 
 	case "transports":
 		return toolText(string(transportsJSON)), false
+
+	case "open_url":
+		return s.openURL(args), false
 	}
 	return toolErr("unknown tool: " + name), false
 }
