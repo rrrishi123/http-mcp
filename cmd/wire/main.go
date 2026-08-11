@@ -11,6 +11,7 @@
 package main
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
 	"net/http"
@@ -37,6 +38,11 @@ func (r *record) observe(resp *http.Response) error {
 func main() {
 	listen := flag.String("listen", ":4724", "address the witness listens on")
 	upstream := flag.String("upstream", "http://localhost:4723", "server being witnessed")
+	// #70: when set, the wire POSTs every observed call into 8's ledger so a MITM'd
+	// smoke becomes a witnessed replayable record (not just a stdout line). The
+	// collector redacts URL credentials before persisting.
+	witness := flag.String("witness", "", "collector URL to record observed calls into 8 (e.g. http://127.0.0.1:7070)")
+	actor := flag.String("actor", "wire-mitm", "X-8-Actor to attribute the witnessed calls to")
 	flag.Parse()
 
 	target, err := url.Parse(*upstream)
@@ -51,12 +57,29 @@ func main() {
 		proxy.ModifyResponse = rec.observe
 		t0 := time.Now()
 		proxy.ServeHTTP(w, req)
+		latUS := float64(time.Since(t0).Microseconds())
 		path := uuidRe.ReplaceAllStringFunc(req.URL.Path, func(s string) string {
 			return s[:8]
 		})
 		fmt.Printf("%s  %-21s %-6s %-50s -> %d  %8dB  %6.0fms\n",
 			t0.Format("15:04:05.000"), req.RemoteAddr, req.Method, path,
-			rec.status, rec.bytes, float64(time.Since(t0).Microseconds())/1000)
+			rec.status, rec.bytes, latUS/1000)
+		// #70: fire-and-forget the observed call into 8's ledger.
+		if *witness != "" {
+			full := target.Scheme + "://" + target.Host + req.URL.Path
+			body := fmt.Sprintf(`{"physics":"call","method":%q,"url":%q,"status":%d,"latency_us":%.0f,"resp_bytes":%d,"actor":%q,"session":"mitm"}`,
+				req.Method, full, rec.status, latUS, rec.bytes, *actor)
+			go func() {
+				r2, _ := http.NewRequest("POST", *witness+"/witnessed", bytes.NewReader([]byte(body)))
+				if r2 != nil {
+					r2.Header.Set("Content-Type", "application/json")
+					r2.Header.Set("X-8-Actor", *actor)
+					if resp, e := (&http.Client{Timeout: 3 * time.Second}).Do(r2); e == nil {
+						resp.Body.Close()
+					}
+				}
+			}()
+		}
 	}
 
 	if err := http.ListenAndServe(*listen, http.HandlerFunc(handler)); err != nil {
