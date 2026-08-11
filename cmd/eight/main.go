@@ -17,6 +17,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+
+	"github.com/rrrishi123/http-mcp/internal/probe"
 )
 
 // subcommand -> the built binary that serves it. "witness" is the collector,
@@ -37,6 +39,13 @@ func main() {
 		os.Exit(2)
 	}
 	sub := os.Args[1]
+	// #77 PROOF: probe runs IN-PROCESS (no exec) via the importable internal/probe
+	// package — the mechanism the full one-binary merge generalizes. The other
+	// atoms still exec (their mains aren't yet importable); converting each is the
+	// same rote move proven here.
+	if sub == "probe" {
+		os.Exit(probe.Run(os.Args[2:]))
+	}
 	rel, ok := atoms[sub]
 	if !ok {
 		fmt.Fprintf(os.Stderr, "eight: unknown atom %q\n\n", sub)
