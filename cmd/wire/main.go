@@ -12,6 +12,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"net/http"
@@ -19,6 +20,8 @@ import (
 	"net/url"
 	"regexp"
 	"time"
+
+	"github.com/rrrishi123/http-mcp/internal/host"
 )
 
 var uuidRe = regexp.MustCompile(
@@ -52,6 +55,11 @@ func main() {
 	fmt.Printf("wire: witnessing %s on %s\n", *upstream, *listen)
 
 	handler := func(w http.ResponseWriter, req *http.Request) {
+		if req.URL.Path == "/host" { // #287: host-resources basic, served locally (not proxied)
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(host.Read())
+			return
+		}
 		rec := &record{}
 		proxy := httputil.NewSingleHostReverseProxy(target)
 		proxy.ModifyResponse = rec.observe
