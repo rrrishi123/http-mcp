@@ -24,12 +24,12 @@ import (
 // subcommand -> the built binary that serves it. "witness" is the collector,
 // which lives in the sibling 8 repo; the rest are this module's cmd/* in .bin/.
 var atoms = map[string]string{
-	"wire":    ".bin/wire",    // the HTTP witness proxy (CALL, transparent)
-	"mcp":     ".bin/http",    // the MCP server (the lean wire agents launch)
-	"channel": ".bin/channel", // the BiDi broker (CHANNEL)
-	"probe":   ".bin/probe",   // discover — probe, don't assume
-	"session": ".bin/session", // device/session bring-up
-	"harvest": ".bin/harvest", // artifact capture
+	"wire":    ".bin/wire",                // the HTTP witness proxy (CALL, transparent)
+	"mcp":     ".bin/http",                // the MCP server (the lean wire agents launch)
+	"channel": ".bin/channel",             // the BiDi broker (CHANNEL)
+	"probe":   ".bin/probe",               // discover — probe, don't assume
+	"session": ".bin/session",             // device/session bring-up
+	"harvest": ".bin/harvest",             // artifact capture
 	"witness": "../8/collector/collector", // the collector (8) — the witness
 }
 

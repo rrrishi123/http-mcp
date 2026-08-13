@@ -167,7 +167,7 @@ func (s *server) tools() []any {
 			// composition of http_request / bidi_command / discover — this runs one
 			// inline, threading ${N.path} from earlier steps into later ones, and
 			// returns every step's result. Reach anything without enumerating anything.
-			"name": "become",
+			"name":        "become",
 			"description": "Become ANY tool by composing the wire's primitives in one call — the lean alternative to a named tool per framework. Give a recipe: an ordered list of steps, each {tool: \"http_request\"|\"bidi_command\"|\"discover\", args: {...}, id?}. Reference an earlier step's result anywhere in a later step's args with a template string like \"${0.result.context}\" or \"${create.result.context}\" (by index or id). The wire runs the whole composition and returns each step's result. Use this to enact a capability (open+drive a tab, probe+then+call, a multi-step flow) without asking for a dedicated tool — a tool is a composition of atoms, and this is how you compose one.",
 			"inputSchema": map[string]any{
 				"type": "object",
