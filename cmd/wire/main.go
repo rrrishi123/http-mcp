@@ -55,16 +55,24 @@ func main() {
 	fmt.Printf("wire: witnessing %s on %s\n", *upstream, *listen)
 
 	handler := func(w http.ResponseWriter, req *http.Request) {
-		if req.URL.Path == "/host" { // #287: host-resources basic, served locally (not proxied)
-			w.Header().Set("Content-Type", "application/json")
-			_ = json.NewEncoder(w).Encode(host.Read())
-			return
-		}
 		rec := &record{}
-		proxy := httputil.NewSingleHostReverseProxy(target)
-		proxy.ModifyResponse = rec.observe
 		t0 := time.Now()
-		proxy.ServeHTTP(w, req)
+		// #325: the one endpoint the wire serves ITSELF still goes through the same
+		// log line + witness POST as proxied calls — every act leaves a trace, the
+		// witness's own acts included. Only the upstream round-trip is skipped.
+		witnessedURL := target.Scheme + "://" + target.Host + req.URL.Path
+		if req.URL.Path == "/host" { // #287: host-resources basic, served locally (not proxied)
+			buf, _ := json.Marshal(host.Read())
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write(buf)
+			rec.status = http.StatusOK
+			rec.bytes = len(buf)
+			witnessedURL = "wire://self/host" // the wire answered, not the upstream
+		} else {
+			proxy := httputil.NewSingleHostReverseProxy(target)
+			proxy.ModifyResponse = rec.observe
+			proxy.ServeHTTP(w, req)
+		}
 		latUS := float64(time.Since(t0).Microseconds())
 		path := uuidRe.ReplaceAllStringFunc(req.URL.Path, func(s string) string {
 			return s[:8]
@@ -74,7 +82,7 @@ func main() {
 			rec.status, rec.bytes, latUS/1000)
 		// #70: fire-and-forget the observed call into 8's ledger.
 		if *witness != "" {
-			full := target.Scheme + "://" + target.Host + req.URL.Path
+			full := witnessedURL
 			body := fmt.Sprintf(`{"physics":"call","method":%q,"url":%q,"status":%d,"latency_us":%.0f,"resp_bytes":%d,"actor":%q,"session":"mitm"}`,
 				req.Method, full, rec.status, latUS, rec.bytes, *actor)
 			go func() {
