@@ -78,8 +78,34 @@ flowchart LR
 | WebRTC | CHANNEL (data) / OBSERVE (video) | adapter SDP | — |
 | Unix domain socket | CALL/CHANNEL (locality) | adapters · BYOD | `unix://` + `SCM_RIGHTS` fd-passing |
 | SSE | OBSERVE (afferent-only) | **8** (witness) | held read-only `/feed` |
+| SQL over HTTP (`POST /sql`) | CALL (dialect; payload language = SQL, substrate = the store) | **8** serves, loopback-only, witnessed | collector `/sql` over `eight.db` |
 
 Three orthogonal properties were conflated by the naive "list of physics": **shape** (the only true mode: CALL/CHANNEL), **transport/locality** (a dialect — lives in adapters), and **direction** (full-duplex vs afferent-only OBSERVE — a sub-mode of CHANNEL, the witness's diet). The wire owns shape only; adapters own every dialect's encoding.
+
+## Reduction rules — how a thing gets classified
+
+Without these rules, "exactly two" is irrefutable-as-stated — any apparent counterexample can be
+absorbed by silently promoting its substrate to a counterpart (**counterpart-sliding**), which makes
+the count metaphysics, not physics (ledger #139). With them, it is a falsifiable claim:
+
+1. **Shape mints atoms; nothing else does.** One request → one response = **CALL**. A held
+   connection you produce into and consume from = **CHANNEL** (afferent-only ⇒ its sub-mode
+   **OBSERVE**). Shape is the *only* property that can create an atom.
+2. **Dialect never mints.** Transport, locality, encoding, and *payload language* are dialects of an
+   atom. `POST /sql` is a **CALL dialect** whose payload happens to be SQL over the store substrate —
+   not a third atom. (Commit 9555080's phrase "the DB ATOM" is retracted language; ledger #315.)
+3. **Substrate promotion must be stated and witnessed.** An operation with no apparent counterpart
+   (a shared file, a kernel signal, a clock expiry, shared memory) may be classified only by promoting
+   its substrate to a counterpart — and the promotion counts only if it is (a) declared here and
+   (b) **witnessed**: the substrate's side must land frames on the feed. An unstated promotion is not
+   a classification; it is the slide this section exists to forbid.
+4. **Composition is taxonomy, never physics.** A queue = CALL-post + CALL-poll *for classification*,
+   but composition never claims equivalence of physics: poll-of-CALLs ≠ CHANNEL in latency and
+   witnessability (the "costume" ruling, ledger #34). Ontology may compose; physics may not.
+5. **The falsifiability clause.** A real operation that resists rules 1–4 after honest application
+   **refutes the count**. Standing crucial experiment: shared-state access to `eight.db` is absorbed
+   today as a witnessed CALL dialect (`/sql`); *direct* unwitnessed file access by two minds remains
+   the open Lamport-duality case. If it cannot be reduced under rule 3, the count is wrong.
 
 ## The afferent law (the core IP)
 
