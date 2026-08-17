@@ -33,6 +33,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -300,6 +301,51 @@ func (h *hub) handleHealth(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// witnessEvery (#616, 4-system task #5): every broker response carries a
+// receipt — efference with reafference, same law as the collector. Injected
+// before the first byte; Flush passes through for /events (SSE).
+var actSeq int64
+
+type witnessWriter struct {
+	http.ResponseWriter
+	req     *http.Request
+	start   time.Time
+	stamped bool
+}
+
+func (w *witnessWriter) stamp() {
+	if w.stamped {
+		return
+	}
+	w.stamped = true
+	h := w.Header()
+	if h.Get("X-8-Witness") == "" {
+		n := atomic.AddInt64(&actSeq, 1)
+		actor := w.req.Header.Get("X-8-Actor")
+		if actor == "" {
+			actor = "undeclared"
+		}
+		d := time.Since(w.start).Milliseconds()
+		h.Set("X-8-Witness", fmt.Sprintf("seen · act #%d · channel · %dms · %s %s · by %s", n, d, w.req.Method, w.req.URL.Path, actor))
+		h.Set("X-8-Ledger-Id", strconv.FormatInt(n, 10))
+		h.Set("X-8-DMs", strconv.FormatInt(d, 10))
+	}
+}
+
+func (w *witnessWriter) WriteHeader(code int)        { w.stamp(); w.ResponseWriter.WriteHeader(code) }
+func (w *witnessWriter) Write(b []byte) (int, error) { w.stamp(); return w.ResponseWriter.Write(b) }
+func (w *witnessWriter) Flush() {
+	if f, ok := w.ResponseWriter.(http.Flusher); ok {
+		f.Flush()
+	}
+}
+
+func witnessEvery(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		next.ServeHTTP(&witnessWriter{ResponseWriter: rw, req: r, start: time.Now()}, r)
+	})
+}
+
 func main() {
 	wsURL := flag.String("ws", "", "the browser channel to hold (ws://host:port/... for BiDi or CDP)")
 	listen := flag.String("listen", ":4445", "HTTP address consumers reach the broker on")
@@ -322,5 +368,5 @@ func main() {
 	mux.HandleFunc("/health", h.handleHealth)
 
 	log.Printf("channel: holding %s, serving on %s (POST /command, GET /events, GET /health)", *wsURL, *listen)
-	log.Fatal(http.ListenAndServe(*listen, mux))
+	log.Fatal(http.ListenAndServe(*listen, witnessEvery(mux))) // #616: receipts on everything
 }
