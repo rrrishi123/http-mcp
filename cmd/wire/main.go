@@ -62,6 +62,11 @@ func main() {
 		}
 		rec := &record{}
 		proxy := httputil.NewSingleHostReverseProxy(target)
+		base := proxy.Director
+		proxy.Director = func(r *http.Request) { // host-validating upstreams
+			base(r)      // (geckodriver: "Invalid Host header") reject the client's
+			r.Host = target.Host // Host — a transparent MITM must present the upstream's own
+		}
 		proxy.ModifyResponse = rec.observe
 		t0 := time.Now()
 		proxy.ServeHTTP(w, req)
