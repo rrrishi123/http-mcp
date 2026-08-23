@@ -33,7 +33,7 @@ The dependency arrow is one-way: adapters → host/witness → wire. Lower layer
 
 ## Two MODES, two atoms
 
-A **mode** is an interaction shape — *not* a transport. There are exactly two:
+A **mode** is an interaction shape — *not* a transport. There are exactly two — a **conjecture**, not a law: under the Reduction rules below it is killable by one honest counterexample, and it has survived every attempt so far (ledger #139):
 
 - **CALL** — one request → one response (discrete). Tool: **`http_request`**.
 - **CHANNEL** — a held duplex connection you produce commands into and consume events from (continuous). Tool: **`bidi_command`**.
