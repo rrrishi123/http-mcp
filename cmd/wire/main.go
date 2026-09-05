@@ -154,6 +154,23 @@ func main() {
 		} else {
 			proxy := httputil.NewSingleHostReverseProxy(target)
 			proxy.ModifyResponse = rec.observe
+			// #69: witnessing an HTTPS hub (LambdaTest, any cloud grid) needs two
+			// things NewSingleHostReverseProxy doesn't do: (1) send the UPSTREAM's
+			// Host header — it preserves the inbound 127.0.0.1 host, which the hub
+			// rejects (GitHub/LT → 400); (2) inject the upstream credential. Both
+			// come from the -upstream URL at runtime (https://user:key@hub/), so no
+			// secret ever lives in code, and the userinfo is not in the witnessed
+			// URL (that uses target.Host only).
+			orig := proxy.Director
+			proxy.Director = func(rq *http.Request) {
+				orig(rq)
+				rq.Host = target.Host
+				if u := target.User; u != nil {
+					if pw, ok := u.Password(); ok {
+						rq.SetBasicAuth(u.Username(), pw)
+					}
+				}
+			}
 			proxy.ServeHTTP(w, req)
 		}
 		latUS := float64(time.Since(t0).Microseconds())
