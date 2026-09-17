@@ -18,10 +18,11 @@ Usage:
   painguard.py <replay.ndjson> --push     # actually POST diagnoses to 8 /work
 """
 import json
+import os
 import sys
 import urllib.request
 
-COLLECTOR = "http://127.0.0.1:7070"
+COLLECTOR = os.environ.get("COLLECTOR", "http://127.0.0.1:7070")
 ACTOR = "painguard"
 
 
