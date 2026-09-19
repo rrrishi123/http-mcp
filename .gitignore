@@ -7,8 +7,9 @@ http-mcp
 # built command binaries must never be committed — build.sh regenerates them
 # per-machine into .bin/ + ./http-mcp. channel/mcp were tracked as stale Linux
 # ELF orphans (wrong arch on any other host); untracked so a clone builds clean.
-channel
-mcp
+# ANCHORED: an unanchored `mcp` also ignores cmd/mcp/ (new files there vanish).
+/channel
+/mcp
 
 # runtime logs / stray artifacts (host + upstream-hub data leaks) — never commit
 *.log
@@ -17,3 +18,8 @@ ltcupdate
 
 # gitignored LT credential files (never commit)
 /auth/*.json
+/harvest
+/probe
+/session
+/wire
+/eight
