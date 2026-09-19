@@ -16,6 +16,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"github.com/rrrishi123/http-mcp/contract/transports"
 	"io"
 	"net/http"
 	"net/url"
@@ -808,7 +809,7 @@ func (s *server) callTool(name string, args map[string]any) (any, bool) {
 		return s.bidiCommand(args), false
 
 	case "transports":
-		return toolText(string(transportsJSON)), false
+		return toolText(string(transports.JSON())), false
 
 	case "become":
 		return s.become(args), false

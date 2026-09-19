@@ -22,8 +22,8 @@ import (
 	"bufio"
 	"crypto/sha1"
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
+	"github.com/rrrishi123/http-mcp/contract/transports"
 	"io"
 	"net"
 	"net/http"
@@ -38,70 +38,21 @@ import (
 	"github.com/rrrishi123/http-mcp/internal/wsx"
 )
 
-type transportEntry struct {
-	Name       string `json:"name"`
-	Mode       string `json:"mode"`
-	Where      string `json:"where"`
-	Atom       string `json:"atom"`
-	Status     string `json:"status"`
-	StdlibOnly bool   `json:"stdlib_only"`
-	ProvidedBy string `json:"provided_by"`
-}
-
-type transportManifest struct {
-	Transports []transportEntry `json:"transports"`
-}
-
-// loadManifest parses the SAME embedded bytes the `transports` tool serves.
-func loadManifest(t *testing.T) transportManifest {
+// loadManifest parses the SAME embedded bytes the `transports` tool serves —
+// now owned by contract/transports, so 8 can run the same check on its side.
+func loadManifest(t *testing.T) transports.Manifest {
 	t.Helper()
-	var m transportManifest
-	if err := json.Unmarshal(transportsJSON, &m); err != nil {
-		t.Fatalf("transports.json (the advertised artifact) does not parse: %v", err)
-	}
-	if len(m.Transports) == 0 {
-		t.Fatal("manifest advertises zero transports")
+	m, err := transports.Load()
+	if err != nil {
+		t.Fatal(err)
 	}
 	return m
 }
 
 // TestManifest_Coherent: the advertisement is internally honest. No over-promise.
 func TestManifest_Coherent(t *testing.T) {
-	for _, e := range loadManifest(t).Transports {
-		if e.Name == "" || e.Mode == "" || e.Where == "" || e.Status == "" {
-			t.Fatalf("incomplete manifest entry: %+v", e)
-		}
-		switch e.Where {
-		case "wire":
-			if e.Atom == "" {
-				t.Errorf("%s: a wire transport must name the atom that serves it", e.Name)
-			}
-			if !e.StdlibOnly {
-				t.Errorf("%s: a wire transport must be stdlib_only (no deps is the whole claim)", e.Name)
-			}
-			if e.Status != "live" {
-				t.Errorf("%s: a wire transport advertised %q — the wire only claims what it serves now", e.Name, e.Status)
-			}
-		case "adapter":
-			if e.Status != "needs-adapter" {
-				t.Errorf("%s: an adapter transport must be status=needs-adapter, got %q", e.Name, e.Status)
-			}
-			if e.ProvidedBy == "" {
-				t.Errorf("%s: an adapter transport must name its provided_by so the claim is traceable", e.Name)
-			}
-			if e.StdlibOnly {
-				t.Errorf("%s: an adapter transport cannot be stdlib_only", e.Name)
-			}
-		default:
-			t.Errorf("%s: unknown where %q (want wire|adapter)", e.Name, e.Where)
-		}
-		if e.Atom != "" { // adapters may omit atom; validate only when present
-			switch e.Atom {
-			case "http_request", "bidi_command", "http_request|bidi_command":
-			default:
-				t.Errorf("%s: atom %q is not one of the two atoms", e.Name, e.Atom)
-			}
-		}
+	if err := transports.Coherent(loadManifest(t)); err != nil {
+		t.Fatal(err)
 	}
 }
 
