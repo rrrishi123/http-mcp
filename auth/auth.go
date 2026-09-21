@@ -11,7 +11,7 @@
 //     client exports these from their own LambdaTest dashboard → Settings → Keys)
 //  2. auth/<profile>.json              (gitignored; {"username":..,"accessKey":..})
 //
-// Scope is deliberately one account — prod:adminltqa — not an env/user matrix.
+// Scope is deliberately one account per profile name — not an env/user matrix.
 // http-mcp stays curl-shaped: it knows how to *carry* a credential, not where
 // any particular org keeps theirs.
 package auth

@@ -26,6 +26,11 @@ import "strings"
 
 // Version is the contract version this tree speaks. Bumped on its own cadence,
 // independent of the arms' tags. Baseline v0.0.2, the documented baseline.
+//
+// TODO(contract-dedup): this is the canonical constant; adapters/trace.Version
+// duplicates the literal because adapters is a zero-dependency module and
+// importing http-mcp/contract would add a new adapters→http-mcp module arrow.
+// Until that arrow is decided, bump BOTH in lockstep.
 const Version = "v0.0.2"
 
 // Compatible reports whether an artifact stamped v (a trace, a run result) can
