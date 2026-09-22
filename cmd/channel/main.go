@@ -33,6 +33,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"sync"
@@ -44,6 +45,14 @@ import (
 
 type hub struct {
 	conn *wsx.Conn
+
+	// upstream is the held socket's ORIGIN (scheme://host:port), redacted: the
+	// path carries the session id, userinfo could carry creds. It is the JOIN
+	// KEY the 8 collector uses to bind a declared browser node (its cdp_url /
+	// devtools listener) to this broker — a consumer's hub (:4445) never equals
+	// the browser's listener, the upstream does (#1147). protocol is bidi | cdp.
+	upstream string
+	protocol string
 
 	mu      sync.Mutex
 	pending map[int]chan json.RawMessage // command id -> where its response is delivered
@@ -292,6 +301,9 @@ func (h *hub) handleHealth(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]any{
 		"alive":       true,
+		"physics":     "channel",
+		"upstream":    h.upstream, // redacted origin of the held socket — the node⨝seat join key
+		"protocol":    h.protocol, // bidi | cdp
 		"uptime":      time.Since(h.started).Round(time.Second).String(),
 		"last_frame":  last,
 		"commands":    atomic.LoadInt64(&h.cmdCount),
@@ -359,6 +371,15 @@ func main() {
 		log.Fatalf("channel: dial %s: %v", *wsURL, err)
 	}
 	h := newHub(conn)
+	if u, err := url.Parse(*wsURL); err == nil && u.Host != "" {
+		h.upstream = u.Scheme + "://" + u.Host
+	}
+	switch {
+	case strings.Contains(*wsURL, "/devtools/"):
+		h.protocol = "cdp"
+	case strings.Contains(*wsURL, "/session/"):
+		h.protocol = "bidi"
+	}
 	go h.read()
 
 	mux := http.NewServeMux()

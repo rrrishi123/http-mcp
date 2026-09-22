@@ -8,7 +8,7 @@ package main
 //
 // Two guards, so advertisement and reality cannot drift apart:
 //   1. TestManifest_Coherent — the manifest is internally honest (wire ⇒ stdlib &
-//      live; adapter ⇒ needs-adapter & names a provider). Pure, no network.
+//      live; adapter ⇒ declared maturity & names a provider). Pure, no network.
 //   2. TestManifest_LiveWireTransportsActuallyWork — every transport the manifest
 //      calls a LIVE WIRE transport is round-tripped through its atom against a
 //      hermetic local server. A live-wire transport with no prober FAILS the

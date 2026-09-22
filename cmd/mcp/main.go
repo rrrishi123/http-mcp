@@ -411,7 +411,7 @@ func applyChannelAuth(rawURL, user, key string) (string, error) {
 
 // specsDir resolves the specs/ directory — binary-adjacent first, then
 // the source-tree fallback so the embedded prior files are found regardless
-// of where the binary was built. No more hardcoded rishirajs Desktop path.
+// of where the binary was built. No more hardcoded absolute source path.
 func specsDir() string {
 	if exe, err := os.Executable(); err == nil {
 		if d := filepath.Join(filepath.Dir(exe), "specs"); dirExists(d) {

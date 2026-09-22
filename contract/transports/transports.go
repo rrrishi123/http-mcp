@@ -1,4 +1,4 @@
-// Package transports is the wire's EXTENT as data: the 8 transports over the
+// Package transports is the wire's EXTENT as data: the 9 transports over the
 // 2 atoms, in transports.json — the single machine-readable source of truth
 // (TRANSPORTS.md is its prose mirror; the http-mcp `transports` tool returns
 // it verbatim). Rule: raw bytes = wire; framing/routing/negotiation = adapter.
@@ -25,8 +25,8 @@ type Entry struct {
 	Name       string `json:"name"`
 	Mode       string `json:"mode"`   // CALL | CHANNEL | CHANNEL (afferent) | CALL|CHANNEL
 	Where      string `json:"where"`  // wire | adapter
-	Atom       string `json:"atom"`   // http_request | bidi_command | http_request|bidi_command (wire only)
-	Status     string `json:"status"` // live (wire) | needs-adapter (adapter)
+	Atom       string `json:"atom"`   // http_request | bidi_command | http_request|bidi_command; optional for adapters
+	Status     string `json:"status"` // live (wire) | needs-adapter | implemented | experimental-primitive (adapter)
 	StdlibOnly bool   `json:"stdlib_only"`
 	ProvidedBy string `json:"provided_by,omitempty"` // adapters/<name> (adapter only)
 	Note       string `json:"note,omitempty"`
@@ -53,8 +53,9 @@ func Load() (Manifest, error) {
 
 // Coherent reports the first way the advertisement over-promises: a wire
 // transport must name its atom, be stdlib-only and live; an adapter transport
-// must be needs-adapter, name its provider and not claim stdlib-only; an atom,
-// when named, must be one of the two.
+// must name its provider and declare whether it is missing, implemented, or
+// an experimental primitive. Adapter dependencies are independent of status;
+// an atom, when named, must be one of the two.
 func Coherent(m Manifest) error {
 	for _, e := range m.Transports {
 		if e.Name == "" || e.Mode == "" || e.Where == "" || e.Status == "" {
@@ -72,14 +73,13 @@ func Coherent(m Manifest) error {
 				return fmt.Errorf("%s: a wire transport advertised %q — the wire only claims what it serves now", e.Name, e.Status)
 			}
 		case "adapter":
-			if e.Status != "needs-adapter" {
-				return fmt.Errorf("%s: an adapter transport must be status=needs-adapter, got %q", e.Name, e.Status)
+			switch e.Status {
+			case "needs-adapter", "implemented", "experimental-primitive":
+			default:
+				return fmt.Errorf("%s: unknown adapter status %q (want needs-adapter|implemented|experimental-primitive)", e.Name, e.Status)
 			}
 			if e.ProvidedBy == "" {
 				return fmt.Errorf("%s: an adapter transport must name its provided_by so the claim is traceable", e.Name)
-			}
-			if e.StdlibOnly {
-				return fmt.Errorf("%s: an adapter transport cannot be stdlib_only", e.Name)
 			}
 		default:
 			return fmt.Errorf("%s: unknown where %q (want wire|adapter)", e.Name, e.Where)
