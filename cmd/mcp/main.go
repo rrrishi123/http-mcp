@@ -16,6 +16,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"github.com/rrrishi123/http-mcp/contract"
 	"github.com/rrrishi123/http-mcp/contract/transports"
 	"io"
 	"net/http"
@@ -878,8 +879,10 @@ func main() {
 
 // fallbackVersion is reported when the binary carries no module version
 // (a `go build` of a working tree reports "(devel)"); `go install ...@vX.Y.Z`
-// stamps the real tag into the build info and that wins.
-const fallbackVersion = "v0.0.3"
+// stamps the real tag into the build info and that wins. It is contract.Version
+// — the ONE source of truth (#1137a): a dev build honestly reports the contract
+// it implements, and there is no hand-edited literal to drift from the tag.
+const fallbackVersion = contract.Version
 
 // selfVersion is the version this server reports in MCP serverInfo — derived
 // from the module build info so the tag, not a hand-edited literal, is the
