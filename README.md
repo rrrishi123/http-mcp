@@ -47,6 +47,7 @@ flowchart LR
   HTTP["HTTP"] --> CALL
   GRPCU["gRPC-unary"] --> CALL
   UNIX["Unix socket"] --> CALL
+  GB["gitbroker"] --> CALL
   WS["WebSocket / CDP / BiDi"] --> CHAN
   GRPCS["gRPC-stream"] --> CHAN
   MQTT["MQTT pub/sub"] --> CHAN
@@ -54,6 +55,7 @@ flowchart LR
   UNIX --> CHAN
   SSE["SSE"] --> OBS
   RTCV["WebRTC (video)"] --> OBS
+  MJPEG["MJPEG"] --> OBS
   subgraph MODES["the only true shapes (the wire owns shape only)"]
     CALL["CALL · http_request"]
     CHAN["CHANNEL · bidi_command"]
@@ -78,6 +80,8 @@ flowchart LR
 | WebRTC | CHANNEL (data) / OBSERVE (video) | adapter SDP | — |
 | Unix domain socket | CALL/CHANNEL (locality) | adapters · BYOD | `unix://` + `SCM_RIGHTS` fd-passing |
 | SSE | OBSERVE (afferent-only) | **8** (witness) | held read-only `/feed` |
+| MJPEG | OBSERVE (afferent-only) | **8** (witness) | held read-only `/stream` (multipart/x-mixed-replace) |
+| gitbroker | CALL | adapter (store-and-forward) | git-commit relay; CALL-post + CALL-poll |
 
 Three orthogonal properties were conflated by the naive "list of physics": **shape** (the only true mode: CALL/CHANNEL), **transport/locality** (a dialect — lives in adapters), and **direction** (full-duplex vs afferent-only OBSERVE — a sub-mode of CHANNEL, the witness's diet). The wire owns shape only; adapters own every dialect's encoding.
 
@@ -168,7 +172,7 @@ flowchart TB
     HX["http_request → internal/httpx (CALL)"]
     WX["bidi_command → internal/wsx (CHANNEL)"]
     DISC["discover — re-perceive a live hub"]
-    TR["transports — the 7→2 manifest"]
+    TR["transports — the 9→2 manifest"]
     AUTH["auth-injection · auth_slot · profiles"]
     PROBE["probe / harvest · route-priors (specs/)"]
   end
