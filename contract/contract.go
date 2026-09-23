@@ -27,10 +27,15 @@ import "strings"
 // Version is the contract version this tree speaks. Bumped on its own cadence,
 // independent of the arms' tags. Baseline v0.0.2, the documented baseline.
 //
-// TODO(contract-dedup): this is the canonical constant; adapters/trace.Version
-// duplicates the literal because adapters is a zero-dependency module and
-// importing http-mcp/contract would add a new adapters→http-mcp module arrow.
-// Until that arrow is decided, bump BOTH in lockstep.
+// TODO(contract-dedup): this is the CANONICAL version constant. Four places
+// mirror it as a literal, because each arm is its own module and importing
+// http-mcp/contract would add a new →http-mcp module arrow the fleet has kept
+// out (the same reason the trace stays unbound — see contract/trace/reqRec-mapping.md).
+// Until that arrow is decided, bump ALL of these in lockstep at the release cut:
+//   - adapters/trace/trace.go      Version
+//   - pilot/main.go                fallbackVersion
+//   - 8/collector/main.go          seriesContractVersion
+//   - 8/install.sh                 VER   (intentionally AHEAD — it names the tag being cut)
 const Version = "v0.0.2"
 
 // Compatible reports whether an artifact stamped v (a trace, a run result) can
