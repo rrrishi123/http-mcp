@@ -25,8 +25,8 @@ future binder would implement.
 | `Status` | `Status` (afferent, CALL) | see cardinality gap |
 | — (channel method) | `Command` (efferent, CHANNEL) | reqRec doesn't split CDP/BiDi method out |
 | — | `Event` (afferent, CHANNEL) | reqRec has no afferent-event field |
-| `RespPreview`, `RespBytes` | `Body` (afferent) | reqRec stores a preview + a byte count, **not** the body |
-| `Seq` | `Seq` | direct |
+| `RespHead` (json `resp_preview`), `RespLen` (json `resp_bytes`) | `Body` (afferent) | reqRec stores a preview + a byte count, **not** the body |
+| `ID` (int64, the ledger id) | `Seq` | **not direct** — reqRec has no `Seq`; the monotonic sequence is *synthesized* at view/replay time, not recorded. A binder must **assign** the numbering, not read it off `reqRec`. |
 | `Actor` (#29 declared identity) | — | **no home in Frame** |
 | `Seat`, `Replayable`, `LatUS` | — | **no home in Frame** |
 
