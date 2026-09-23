@@ -225,4 +225,4 @@ Orients/Decides, witness Observes; **Kalman observability** — you cannot contr
 
 The full transport candidate list — **HTTP, WebSocket, SSE, MJPEG, Unix socket, gRPC, MQTT, WebRTC** — all reduce to the wire's **two atoms**: `http_request` (CALL) and `bidi_command` (CHANNEL). Raw bytes ⇒ wire; framing/routing/negotiation ⇒ adapter.
 
-→ See **[TRANSPORTS.md](./TRANSPORTS.md)** for the full map (prose + Mermaid). Machine-readable: the http-mcp MCP **`transports`** tool returns [`transports.json`](https://github.com/rrrishi123/http-mcp/blob/v.0.0.1/cmd/mcp/transports.json) verbatim — the map any agent reads first.
+→ See **[TRANSPORTS.md](./TRANSPORTS.md)** for the full map (prose + Mermaid). Machine-readable: the http-mcp MCP **`transports`** tool returns [`transports.json`](https://github.com/rrrishi123/http-mcp/blob/release/v0.0.2/contract/transports/transports.json) verbatim — the map any agent reads first.
