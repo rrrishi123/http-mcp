@@ -134,6 +134,19 @@ func (h *hub) shutdown() {
 	}
 }
 
+// wireCmd builds the JSON-RPC frame sent on the held socket. sessionId is
+// forwarded ONLY when non-empty — CDP flat-mode routes a command to an attached
+// target's session (B4); an empty sessionId leaves the socket's own target
+// (browser or page) addressed, unchanged.
+func wireCmd(id int, method string, params json.RawMessage, sessionID string) []byte {
+	msg := map[string]any{"id": id, "method": method, "params": params}
+	if sessionID != "" {
+		msg["sessionId"] = sessionID
+	}
+	b, _ := json.Marshal(msg)
+	return b
+}
+
 // handleCommand sends one command on the HELD socket and returns its response.
 // The broker assigns the id (it owns the connection), so concurrent consumers
 // never collide on the id space.
@@ -151,11 +164,7 @@ func (h *hub) handleCommand(w http.ResponseWriter, r *http.Request) {
 		in.Params = json.RawMessage("{}")
 	}
 	id := int(atomic.AddInt64(&h.nextCmd, 1))
-	msg := map[string]any{"id": id, "method": in.Method, "params": in.Params}
-	if in.SessionID != "" {
-		msg["sessionId"] = in.SessionID // preserve flat-mode routing; absent = the socket's own (browser or page) target, unchanged
-	}
-	cmd, _ := json.Marshal(msg)
+	cmd := wireCmd(id, in.Method, in.Params, in.SessionID)
 
 	ch := make(chan json.RawMessage, 1)
 	h.mu.Lock()
