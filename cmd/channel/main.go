@@ -139,8 +139,9 @@ func (h *hub) shutdown() {
 // never collide on the id space.
 func (h *hub) handleCommand(w http.ResponseWriter, r *http.Request) {
 	var in struct {
-		Method string          `json:"method"`
-		Params json.RawMessage `json:"params"`
+		Method    string          `json:"method"`
+		Params    json.RawMessage `json:"params"`
+		SessionID string          `json:"sessionId"` // CDP flat-mode: route to an attached target's session (B4 — a browser-level socket screenshotting a specific page)
 	}
 	if err := json.NewDecoder(r.Body).Decode(&in); err != nil || in.Method == "" {
 		http.Error(w, `{"error":"method is required"}`, http.StatusBadRequest)
@@ -150,7 +151,11 @@ func (h *hub) handleCommand(w http.ResponseWriter, r *http.Request) {
 		in.Params = json.RawMessage("{}")
 	}
 	id := int(atomic.AddInt64(&h.nextCmd, 1))
-	cmd, _ := json.Marshal(map[string]any{"id": id, "method": in.Method, "params": in.Params})
+	msg := map[string]any{"id": id, "method": in.Method, "params": in.Params}
+	if in.SessionID != "" {
+		msg["sessionId"] = in.SessionID // preserve flat-mode routing; absent = the socket's own (browser or page) target, unchanged
+	}
+	cmd, _ := json.Marshal(msg)
 
 	ch := make(chan json.RawMessage, 1)
 	h.mu.Lock()
@@ -178,7 +183,11 @@ func (h *hub) handleCommand(w http.ResponseWriter, r *http.Request) {
 	if origin == "" {
 		origin = "wire"
 	}
-	if echo, err := json.Marshal(map[string]any{"__cmd": true, "origin": origin, "id": id, "method": in.Method, "params": in.Params}); err == nil {
+	em := map[string]any{"__cmd": true, "origin": origin, "id": id, "method": in.Method, "params": in.Params}
+	if in.SessionID != "" {
+		em["sessionId"] = in.SessionID
+	}
+	if echo, err := json.Marshal(em); err == nil {
 		h.fanout(json.RawMessage(echo))
 	}
 
