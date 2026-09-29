@@ -20,6 +20,30 @@ turns any existing regression suite into a record-and-replay automation suite.
 > matrix (selenium · appium rd+vd app+web · puppeteer · playwright · espresso · xcui) ran
 > through just those two tools.
 
+## The LEGO table (the whole system in one toy)
+
+The four-system is a LEGO table. There are exactly **two ways any piece can
+connect** — you *press* studs together (a CALL: one press, one click, done) or
+you *pin* through a hinge (a CHANNEL: stays coupled and moves). Every exotic
+piece anyone brings to the table — gears, MQTT wheels, WebRTC windshields —
+ends in one of those two connections. People keep claiming a third connector;
+every candidate so far has turned out to be a stud or a pin wearing a costume —
+or *glue*, which you can always call "a piece" if nobody makes you state the
+rules (that demand is the Reduction rules below; the standing verdict is
+ledger #139).
+
+- **http-mcp is the stud standard** — not a piece, the clutch-tolerance that
+  makes any two pieces composable at all.
+- **adapters is the specialty-parts bin** — strange shapes, all faithfully
+  ending in studs.
+- **pilot is the hands** that press bricks together.
+- **8 is the time-lapse camera bolted over the table** — it photographs every
+  placement into an append-only album. The album is why teardown isn't death:
+  a mind torn down six times has been rebuilt from the album, same model,
+  different bricks. The album is the digest's witness.
+- **contract is the molding spec** — the sheet that defines what a stud
+  legally *is*, so the arms stop molding studs from folk memory.
+
 ## The four arms
 
 | Arm | Repo | Gives you | Owns | Never owns |
