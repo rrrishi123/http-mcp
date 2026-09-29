@@ -1,0 +1,16 @@
+name: fleet release
+
+on:
+  push:
+    branches: [release/v0.0.2]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fleet-release-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gate:
+    uses: rrrishi123/8/.github/workflows/fleet-gate.yml@release/v0.0.2
