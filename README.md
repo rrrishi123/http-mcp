@@ -141,6 +141,28 @@ The model learns **only from what comes back** (afferent); nothing flows *toward
 **Act lives inside Observe** — an act is known only by observing its result. `efferent` (toward the target)
 is one leg; the model's knowledge is built from the `afferent` leg alone.
 
+
+## Inscription is truth (what may be trusted)
+
+Only the **witnessed record** may be trusted — the ledger, `/manifest`, `/resolve`, the
+recorded acts. A **digest asserts; the record witnesses.** A memory, a summary, a `.md`, or
+the text on a screen is an *assertion* until checked against the witness; a mind resolves the
+world through the inscribed view — never a private `getTree`, blind to what it did not open —
+and reconciles the instant the two diverge. Corollary: **only what is observed can be acted
+on** — an un-witnessed tab (`opened_by: unknown`) is visible but not cleanly ownable until its
+opening is inscribed. In Linux everything is a file; the four-system makes the *trustworthy*
+files the witnessed ones.
+
+## Continuity is a digest (how a mind survives its own death)
+
+A mind's context is finite; compaction is a death. What survives is not the transcript but a
+**digest** — a *mantra* (the invariant it re-derives every waking: `http-mcp=WIRE, 8=WITNESS,
+pilot=HOST, adapters=PROVIDER`) plus a *sediment* of the fleet's verdicts, promoted from
+findings into law across resurrections. The rule that makes this knowledge and not lore:
+**unstated compression is metaphysics; stated, auditable compression is knowledge** — every
+digest keeps a pointer back to the undigested record, so any claim it carries can be re-checked
+against the witness. A mind is its mantra plus its sediment, resurrected by a digest whose
+residue stays auditable.
 ## 8 — the witness: observe every tab, control none
 
 8 is the OODA **Observe**. It must see *all* tabs (per-tab memory/CPU/events, including itself)
