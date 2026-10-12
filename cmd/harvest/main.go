@@ -36,19 +36,38 @@ type snapshot struct {
 }
 
 func get(url string) []byte {
-	resp, err := http.Get(url)
-	if err != nil {
-		panic(err)
+	// Transient failures (TLS handshake timeouts, 429, 5xx) must not red the
+	// advisory drift harvest — this is a daily "did upstream cut a version"
+	// check, not a correctness gate. Retry with linear backoff; a real 4xx or a
+	// final exhausted retry still panics, so a genuine upstream change surfaces.
+	var lastErr error
+	for attempt := 0; attempt < 5; attempt++ {
+		if attempt > 0 {
+			time.Sleep(time.Duration(attempt) * 2 * time.Second)
+		}
+		resp, err := http.Get(url)
+		if err != nil {
+			lastErr = err
+			continue
+		}
+		if resp.StatusCode == 429 || resp.StatusCode >= 500 {
+			resp.Body.Close()
+			lastErr = fmt.Errorf("GET %s -> %d", url, resp.StatusCode)
+			continue
+		}
+		if resp.StatusCode != 200 {
+			resp.Body.Close()
+			panic(fmt.Sprintf("GET %s -> %d", url, resp.StatusCode))
+		}
+		b, err := io.ReadAll(resp.Body)
+		resp.Body.Close()
+		if err != nil {
+			lastErr = err
+			continue
+		}
+		return b
 	}
-	defer resp.Body.Close()
-	if resp.StatusCode != 200 {
-		panic(fmt.Sprintf("GET %s -> %d", url, resp.StatusCode))
-	}
-	b, err := io.ReadAll(resp.Body)
-	if err != nil {
-		panic(err)
-	}
-	return b
+	panic(fmt.Sprintf("GET %s failed after retries: %v", url, lastErr))
 }
 
 func npmLatest(pkg string) string {
