@@ -1,6 +1,6 @@
 # http-mcp — the WIRE
 
-> Part of **The Wire** — a four-arm system for protocol-agnostic test automation with record & replay.
+> Part of **The Wire** — a **witnessed substrate for agents**: two modes over a lean wire that any mind acts on, and a witness that makes agents continuous, auditable, and federated across hosts. (Record-and-replay test automation is one application, not the definition.)
 > **This repo is the http-mcp — the WIRE** — the two modes (CALL/CHANNEL) + auth-injection + probe/harvest. Zero provider awareness.
 > **The four arms:** [http-mcp](https://github.com/rrrishi123/http-mcp) (WIRE) · [8](https://github.com/rrrishi123/8) (WITNESS) · [pilot](https://github.com/rrrishi123/pilot) (HOST) · [adapters](https://github.com/rrrishi123/adapters) (ARMS)
 
@@ -8,11 +8,14 @@
 
 <!-- ===== SHARED TERRITORY (identical across http-mcp · 8 · pilot · adapters) ===== -->
 
-# The Wire — a four-arm system
+# The Wire — a witnessed substrate for agents
 
-**Every test/automation interaction reduces to two _modes_ over a deliberately lean wire.**
-Capability is composed _above_ the wire by three more arms. A fork of these four arms
-turns any existing regression suite into a record-and-replay automation suite.
+**Two modes — CALL and CHANNEL — over a deliberately lean wire let any mind act on the
+world; a witness records every act so agents stay continuous, auditable, and federated
+across hosts.** Capability is composed _above_ the wire by three more arms.
+Record-and-replay test automation was the first thing it proved itself on — one
+application, not the definition: a fork still turns any regression suite into a
+record-and-replay automation suite, but the system is the **witness**, not the test harness.
 
 > The thesis: a wire that holds exactly **two modes** + a generic credential-injection
 > mechanism + generic probe/harvest is *enough* to reach every provider, every framework,
