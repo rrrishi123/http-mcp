@@ -23,3 +23,6 @@ ltcupdate
 /session
 /wire
 /eight
+
+# harvested provider specs (regenerable, versioned)
+specs/**/*@*.json
