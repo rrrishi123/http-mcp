@@ -16,11 +16,14 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"github.com/rrrishi123/http-mcp/contract"
+	"github.com/rrrishi123/http-mcp/contract/transports"
 	"io"
 	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
+	"runtime/debug"
 	"strconv"
 	"strings"
 	"time"
@@ -107,7 +110,7 @@ func (s *server) tools() []any {
 					"url":        str("Full URL to call."),
 					"headers":    map[string]any{"type": "object", "description": "Header name -> value.", "additionalProperties": map[string]any{"type": "string"}},
 					"body":       str("Request body: a raw string, OR a JSON object (e.g. {\"method\":...,\"params\":{}}) which is sent as JSON — both work."),
-					"auth":       map[string]any{"type": "object", "description": "Optional auth. Either {profile: \"prod:adminltqa\"} to resolve a Basic credential from the environment (LT_USERNAME/LT_ACCESS_KEY) or a gitignored auth/<profile>.json — the secret never passes through here — or a literal {type: basic|bearer|apikey, user, key, header}."},
+					"auth":       map[string]any{"type": "object", "description": "Optional auth. Either {profile: \"<env>:<account>\"} to resolve a Basic credential from the environment (LT_USERNAME/LT_ACCESS_KEY) or a gitignored auth/<profile>.json — the secret never passes through here — or a literal {type: basic|bearer|apikey, user, key, header}."},
 					"timeout_ms": map[string]any{"type": "integer", "description": "Optional. Give up after this many ms (default ~30s). Raise it for slow cloud session creation — Appium/Espresso/XCUITest builds take tens of seconds."},
 				},
 				"required": []any{"method", "url"},
@@ -409,7 +412,7 @@ func applyChannelAuth(rawURL, user, key string) (string, error) {
 
 // specsDir resolves the specs/ directory — binary-adjacent first, then
 // the source-tree fallback so the embedded prior files are found regardless
-// of where the binary was built. No more hardcoded rishirajs Desktop path.
+// of where the binary was built. No more hardcoded absolute source path.
 func specsDir() string {
 	if exe, err := os.Executable(); err == nil {
 		if d := filepath.Join(filepath.Dir(exe), "specs"); dirExists(d) {
@@ -808,7 +811,7 @@ func (s *server) callTool(name string, args map[string]any) (any, bool) {
 		return s.bidiCommand(args), false
 
 	case "transports":
-		return toolText(string(transportsJSON)), false
+		return toolText(string(transports.JSON())), false
 
 	case "become":
 		return s.become(args), false
@@ -822,7 +825,7 @@ func (s *server) handle(req rpcReq) {
 		s.ok(req.ID, map[string]any{
 			"protocolVersion": protocolVersion,
 			"capabilities":    map[string]any{"tools": map[string]any{}},
-			"serverInfo":      map[string]any{"name": "http-mcp", "version": "0.2.0"},
+			"serverInfo":      map[string]any{"name": "http-mcp", "version": selfVersion()},
 		})
 	case "notifications/initialized":
 	case "ping":
@@ -872,4 +875,23 @@ func main() {
 			return
 		}
 	}
+}
+
+// fallbackVersion is reported when the binary carries no module version
+// (a `go build` of a working tree reports "(devel)"); `go install ...@vX.Y.Z`
+// stamps the real tag into the build info and that wins. It is contract.Version
+// — the ONE source of truth (#1137a): a dev build honestly reports the contract
+// it implements, and there is no hand-edited literal to drift from the tag.
+const fallbackVersion = contract.Version
+
+// selfVersion is the version this server reports in MCP serverInfo — derived
+// from the module build info so the tag, not a hand-edited literal, is the
+// source of truth.
+func selfVersion() string {
+	if bi, ok := debug.ReadBuildInfo(); ok {
+		if v := bi.Main.Version; v != "" && v != "(devel)" {
+			return v
+		}
+	}
+	return fallbackVersion
 }

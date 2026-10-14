@@ -33,6 +33,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/url"
+	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -43,6 +45,14 @@ import (
 
 type hub struct {
 	conn *wsx.Conn
+
+	// upstream is the held socket's ORIGIN (scheme://host:port), redacted: the
+	// path carries the session id, userinfo could carry creds. It is the JOIN
+	// KEY the 8 collector uses to bind a declared browser node (its cdp_url /
+	// devtools listener) to this broker — a consumer's hub (:4445) never equals
+	// the browser's listener, the upstream does (#1147). protocol is bidi | cdp.
+	upstream string
+	protocol string
 
 	mu      sync.Mutex
 	pending map[int]chan json.RawMessage // command id -> where its response is delivered
@@ -124,13 +134,27 @@ func (h *hub) shutdown() {
 	}
 }
 
+// wireCmd builds the JSON-RPC frame sent on the held socket. sessionId is
+// forwarded ONLY when non-empty — CDP flat-mode routes a command to an attached
+// target's session (B4); an empty sessionId leaves the socket's own target
+// (browser or page) addressed, unchanged.
+func wireCmd(id int, method string, params json.RawMessage, sessionID string) []byte {
+	msg := map[string]any{"id": id, "method": method, "params": params}
+	if sessionID != "" {
+		msg["sessionId"] = sessionID
+	}
+	b, _ := json.Marshal(msg)
+	return b
+}
+
 // handleCommand sends one command on the HELD socket and returns its response.
 // The broker assigns the id (it owns the connection), so concurrent consumers
 // never collide on the id space.
 func (h *hub) handleCommand(w http.ResponseWriter, r *http.Request) {
 	var in struct {
-		Method string          `json:"method"`
-		Params json.RawMessage `json:"params"`
+		Method    string          `json:"method"`
+		Params    json.RawMessage `json:"params"`
+		SessionID string          `json:"sessionId"` // CDP flat-mode: route to an attached target's session (B4 — a browser-level socket screenshotting a specific page)
 	}
 	if err := json.NewDecoder(r.Body).Decode(&in); err != nil || in.Method == "" {
 		http.Error(w, `{"error":"method is required"}`, http.StatusBadRequest)
@@ -140,7 +164,7 @@ func (h *hub) handleCommand(w http.ResponseWriter, r *http.Request) {
 		in.Params = json.RawMessage("{}")
 	}
 	id := int(atomic.AddInt64(&h.nextCmd, 1))
-	cmd, _ := json.Marshal(map[string]any{"id": id, "method": in.Method, "params": in.Params})
+	cmd := wireCmd(id, in.Method, in.Params, in.SessionID)
 
 	ch := make(chan json.RawMessage, 1)
 	h.mu.Lock()
@@ -168,7 +192,11 @@ func (h *hub) handleCommand(w http.ResponseWriter, r *http.Request) {
 	if origin == "" {
 		origin = "wire"
 	}
-	if echo, err := json.Marshal(map[string]any{"__cmd": true, "origin": origin, "id": id, "method": in.Method, "params": in.Params}); err == nil {
+	em := map[string]any{"__cmd": true, "origin": origin, "id": id, "method": in.Method, "params": in.Params}
+	if in.SessionID != "" {
+		em["sessionId"] = in.SessionID
+	}
+	if echo, err := json.Marshal(em); err == nil {
 		h.fanout(json.RawMessage(echo))
 	}
 
@@ -291,12 +319,60 @@ func (h *hub) handleHealth(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]any{
 		"alive":       true,
+		"physics":     "channel",
+		"upstream":    h.upstream, // redacted origin of the held socket — the node⨝seat join key
+		"protocol":    h.protocol, // bidi | cdp
 		"uptime":      time.Since(h.started).Round(time.Second).String(),
 		"last_frame":  last,
 		"commands":    atomic.LoadInt64(&h.cmdCount),
 		"events":      atomic.LoadInt64(&h.evtCount),
 		"in_flight":   inflight,
 		"subscribers": subs,
+	})
+}
+
+// witnessEvery (#616, 4-system task #5): every broker response carries a
+// receipt — efference with reafference, same law as the collector. Injected
+// before the first byte; Flush passes through for /events (SSE).
+var actSeq int64
+
+type witnessWriter struct {
+	http.ResponseWriter
+	req     *http.Request
+	start   time.Time
+	stamped bool
+}
+
+func (w *witnessWriter) stamp() {
+	if w.stamped {
+		return
+	}
+	w.stamped = true
+	h := w.Header()
+	if h.Get("X-8-Witness") == "" {
+		n := atomic.AddInt64(&actSeq, 1)
+		actor := w.req.Header.Get("X-8-Actor")
+		if actor == "" {
+			actor = "undeclared"
+		}
+		d := time.Since(w.start).Milliseconds()
+		h.Set("X-8-Witness", fmt.Sprintf("seen · act #%d · channel · %dms · %s %s · by %s", n, d, w.req.Method, w.req.URL.Path, actor))
+		h.Set("X-8-Ledger-Id", strconv.FormatInt(n, 10))
+		h.Set("X-8-DMs", strconv.FormatInt(d, 10))
+	}
+}
+
+func (w *witnessWriter) WriteHeader(code int)        { w.stamp(); w.ResponseWriter.WriteHeader(code) }
+func (w *witnessWriter) Write(b []byte) (int, error) { w.stamp(); return w.ResponseWriter.Write(b) }
+func (w *witnessWriter) Flush() {
+	if f, ok := w.ResponseWriter.(http.Flusher); ok {
+		f.Flush()
+	}
+}
+
+func witnessEvery(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		next.ServeHTTP(&witnessWriter{ResponseWriter: rw, req: r, start: time.Now()}, r)
 	})
 }
 
@@ -313,6 +389,15 @@ func main() {
 		log.Fatalf("channel: dial %s: %v", *wsURL, err)
 	}
 	h := newHub(conn)
+	if u, err := url.Parse(*wsURL); err == nil && u.Host != "" {
+		h.upstream = u.Scheme + "://" + u.Host
+	}
+	switch {
+	case strings.Contains(*wsURL, "/devtools/"):
+		h.protocol = "cdp"
+	case strings.Contains(*wsURL, "/session/"):
+		h.protocol = "bidi"
+	}
 	go h.read()
 
 	mux := http.NewServeMux()
@@ -322,5 +407,5 @@ func main() {
 	mux.HandleFunc("/health", h.handleHealth)
 
 	log.Printf("channel: holding %s, serving on %s (POST /command, GET /events, GET /health)", *wsURL, *listen)
-	log.Fatal(http.ListenAndServe(*listen, mux))
+	log.Fatal(http.ListenAndServe(*listen, witnessEvery(mux))) // #616: receipts on everything
 }
