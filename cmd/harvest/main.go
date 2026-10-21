@@ -35,6 +35,12 @@ type snapshot struct {
 	Routes  []route `json:"routes"`
 }
 
+// errNotFound marks an upstream 404 so a caller can treat a retired file as
+// news rather than a crash (wdio 10 dropped mjsonwp.ts).
+type errNotFound struct{ url string }
+
+func (e errNotFound) Error() string { return "GET " + e.url + " -> 404" }
+
 func get(url string) []byte {
 	// Transient failures (TLS handshake timeouts, 429, 5xx) must not red the
 	// advisory drift harvest — this is a daily "did upstream cut a version"
@@ -54,6 +60,10 @@ func get(url string) []byte {
 			resp.Body.Close()
 			lastErr = fmt.Errorf("GET %s -> %d", url, resp.StatusCode)
 			continue
+		}
+		if resp.StatusCode == 404 {
+			resp.Body.Close()
+			panic(errNotFound{url})
 		}
 		if resp.StatusCode != 200 {
 			resp.Body.Close()
@@ -216,9 +226,28 @@ func harvestWdio() {
 			fmt.Println("current ", rel)
 			continue
 		}
-		writeSnapshot(rel, "npm:@wdio/protocols/"+name, v,
-			extractRoutes(string(get(base+"/"+name+".ts"))))
+		src, ok := getProtocol(base + "/" + name + ".ts")
+		if !ok {
+			// a protocol upstream no longer ships at this version: say so loudly in
+			// CI, keep the older snapshots, and harvest the rest
+			fmt.Printf("::warning::retired  %s — %s.ts is gone at @wdio/protocols@%s; older snapshots kept\n", rel, name, v)
+			continue
+		}
+		writeSnapshot(rel, "npm:@wdio/protocols/"+name, v, extractRoutes(string(src)))
 	}
+}
+
+// getProtocol is get, except a 404 reports ok=false instead of panicking.
+func getProtocol(url string) (b []byte, ok bool) {
+	defer func() {
+		if r := recover(); r != nil {
+			if _, nf := r.(errNotFound); !nf {
+				panic(r)
+			}
+			b, ok = nil, false
+		}
+	}()
+	return get(url), true
 }
 
 func main() {
