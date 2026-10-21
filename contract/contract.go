@@ -25,7 +25,7 @@ package contract
 import "strings"
 
 // Version is the contract version this tree speaks. Bumped on its own cadence,
-// independent of the arms' tags. Baseline v0.0.2, the documented baseline.
+// independent of the arms' tags. v0.0.3 since the 2026-10-21 cut (baseline v0.0.2).
 //
 // TODO(contract-dedup): this is the CANONICAL version constant. Four places
 // mirror it as a literal, because each arm is its own module and importing
@@ -36,7 +36,7 @@ import "strings"
 //   - pilot/main.go                fallbackVersion
 //   - 8/collector/main.go          seriesContractVersion
 //   - 8/install.sh                 VER   (intentionally AHEAD — it names the tag being cut)
-const Version = "v0.0.2"
+const Version = "v0.0.3"
 
 // Compatible reports whether an artifact stamped v (a trace, a run result) can
 // be consumed by this contract: same major.minor. An empty stamp is compatible
