@@ -16,6 +16,13 @@ Release-readiness follow-ups to the v0.0.2 line:
 - CI also runs `./build.sh` so the shippable `.bin/` layout is verified.
 - `contract.Version` marked `TODO(contract-dedup)`: adapters/trace duplicates
   the literal; making one source of truth needs a module-arrow decision.
+- **harvest**: `@wdio/protocols` 10 no longer ships `mjsonwp.ts` (JSON Wire is
+  gone upstream). A 404 for a protocol file is now a `::warning::` "retired"
+  line that keeps the older snapshots, where it used to be a panic that turned
+  the drift job red. Any other failure still panics.
+- **specs/**: wdio-protocols 10.0.2 snapshots (webdriver 76 routes, chromium 28,
+  gecko 5, selenium-grid 9); `appium/base-driver@10.8.1` tracked like the other
+  versioned specs.
 - This changelog.
 
 ## v0.0.2 — 2026-09
