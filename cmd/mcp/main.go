@@ -109,7 +109,7 @@ func (s *server) tools() []any {
 					"method":     str("HTTP method (GET, POST, DELETE, ...)"),
 					"url":        str("Full URL to call."),
 					"headers":    map[string]any{"type": "object", "description": "Header name -> value.", "additionalProperties": map[string]any{"type": "string"}},
-					"body":       str("Request body: a raw string, OR a JSON object (e.g. {\"method\":...,\"params\":{}}) which is sent as JSON — both work."),
+					"body":       map[string]any{"type": []any{"string", "object"}, "description": "Request body: a raw string, OR a JSON object (e.g. {\"method\":...,\"params\":{}}) sent as JSON VERBATIM — every field is preserved, never reshaped to a known schema (#4471). Both work."},
 					"auth":       map[string]any{"type": "object", "description": "Optional auth. Either {profile: \"<env>:<account>\"} to resolve a Basic credential from the environment (LT_USERNAME/LT_ACCESS_KEY) or a gitignored auth/<profile>.json — the secret never passes through here — or a literal {type: basic|bearer|apikey, user, key, header}."},
 					"timeout_ms": map[string]any{"type": "integer", "description": "Optional. Give up after this many ms (default ~30s). Raise it for slow cloud session creation — Appium/Espresso/XCUITest builds take tens of seconds."},
 				},
