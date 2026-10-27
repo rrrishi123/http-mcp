@@ -1,0 +1,41 @@
+name: leak guard
+
+# Server-side half of the pre-push guard (#9483): even if a push skips the local
+# hook (--no-verify, a fresh clone), CI re-scans the diff for private material and
+# runs gitleaks. The denylist mirrors .githooks/pre-push.
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  denylist:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Scan the range for private material
+        run: |
+          DENY='omarchy|/Users/[a-z]|/home/[a-z]|(^|[^0-9])10\.(104|255|83)\.|(^|[^0-9])100\.(8[0-9]|9[0-9])\.|rishirajs|design-reference/_ds|(^|/)kosaten/'
+          base="${{ github.event.pull_request.base.sha }}"
+          if [ -z "$base" ]; then base="${{ github.event.before }}"; fi
+          if [ -z "$base" ] || ! git cat-file -e "$base" 2>/dev/null; then base="$(git rev-list --max-parents=0 HEAD | tail -1)"; fi
+          hits="$(git diff "$base..HEAD" -- . ':(exclude).githooks/*' ':(exclude).github/workflows/leakguard.yml' | grep -E '^\+' | grep -inE "$DENY" | head -40 || true)"
+          if [ -n "$hits" ]; then
+            echo "::error::private material in the diff (see .githooks/pre-push denylist):"
+            echo "$hits"
+            exit 1
+          fi
+          echo "clean"
+  gitleaks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
