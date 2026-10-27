@@ -6,6 +6,14 @@
 set -uo pipefail
 
 DENY='omarchy|/Users/[a-z]|/home/[a-z]|(^|[^0-9])10\.(104|255|83)\.|(^|[^0-9])100\.(8[0-9]|9[0-9])\.|rishirajs|design-reference/_ds|(^|/)kosaten/'
+# Supplement the denylist from a PRIVATE local file kept OUTSIDE any repo (same pattern
+# as ~/.8/watch.d / codex-budget.sh): office/org identifiers (private GitHub org, org ids,
+# Slack tokens) that must never enter these PUBLIC repos — without naming them in the tree.
+SUPP="${HOME}/.8/leak-denylist.txt"
+if [ -r "$SUPP" ]; then
+  extra=$(grep -vE '^[[:space:]]*(#|$)' "$SUPP" | paste -sd'|' -)
+  [ -n "$extra" ] && DENY="${DENY}|${extra}"
+fi
 ZERO=0000000000000000000000000000000000000000
 fail=0
 
