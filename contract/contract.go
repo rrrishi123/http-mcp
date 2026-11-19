@@ -36,7 +36,7 @@ import "strings"
 //   - pilot/main.go                fallbackVersion
 //   - 8/collector/main.go          seriesContractVersion
 //   - 8/install.sh                 VER   (intentionally AHEAD — it names the tag being cut)
-const Version = "v0.0.3"
+const Version = "v0.0.4"
 
 // Compatible reports whether an artifact stamped v (a trace, a run result) can
 // be consumed by this contract: same major.minor. An empty stamp is compatible
