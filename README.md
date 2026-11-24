@@ -1,11 +1,35 @@
 # http-mcp — the WIRE
 
-> Part of **The Wire** — a **witnessed substrate for agents**: two modes over a lean wire that any mind acts on, and a witness that makes agents continuous, auditable, and federated across hosts. (Record-and-replay test automation is one application, not the definition.)
-> **This repo is the http-mcp — the WIRE** — the two modes (CALL/CHANNEL) + auth-injection + probe/harvest. Zero provider awareness.
+**Drive Selenium, Appium, Playwright, Puppeteer, CDP and raw REST through exactly two tools.** `http_request` is the **CALL** atom — one request, one response, the wire beneath WebDriver/Appium (W3C classic is just HTTP). `bidi_command` is the **CHANNEL** atom — one command over a held CDP/BiDi WebSocket, the wire beneath Playwright/Puppeteer/Selenium-BiDi. The server knows about none of those frameworks; it owns the two shapes and nothing above them.
+
+## Quick start
+
+```bash
+git clone https://github.com/rrrishi123/http-mcp && cd http-mcp
+./build.sh                                   # builds .bin/http-mcp (the stdio MCP server) + the helper binaries
+go test ./internal/httpx/ -run TestCall -v   # hermetic proof of the CALL atom: plain HTTP, JSON body, SSE, unix socket — no external service, no browser (first build fetches Go deps)
+python3 test/wire-mock.py                     # optional: a live mock on 127.0.0.1:8791 to drive through the real http_request tool
+```
+
+Point an agent at `.bin/http-mcp` as an MCP server and its whole tool surface is: `http_request`, `bidi_command`, `discover`, `transports`.
+
+## What you get
+
+- **Two atoms, every framework** — a 15-combo matrix (selenium · appium rd+vd app+web · puppeteer · playwright · espresso · xcui) proven live through just `http_request` and `bidi_command`.
+- **`discover`** — re-perceive what a live hub actually serves and correct the stored prior (`specs/`) against the real wire.
+- **Auth without secrets on the wire** — a generic credential-injection mechanism: a call names an `auth_slot`; the secret is resolved below the boundary and never appears in a trace.
+- **`transports`** — the machine-readable 9→2 manifest (`contract/transports/transports.json`), verbatim: the map any agent reads first. Raw bytes ⇒ wire; framing/routing/negotiation ⇒ an adapter.
+- **One lean binary, stdlib only** — newline-delimited JSON-RPC 2.0 over stdio, no SDK; stdout is the protocol channel, logs go to stderr.
+
+<details><summary><b>The deeper idea — the narrow waist</b></summary>
+
+> Part of **The Wire** — a witnessed substrate for agents: **two modes** (CALL and CHANNEL) over a lean wire any mind acts on, with a witness that makes agents continuous, auditable, and federated. This repo is the **WIRE** — the narrow waist; capability is composed *above* it by three more arms, which never leak back down into it.
 > **The four arms:** [http-mcp](https://github.com/rrrishi123/http-mcp) (WIRE) · [8](https://github.com/rrrishi123/8) (WITNESS) · [pilot](https://github.com/rrrishi123/pilot) (HOST) · [adapters](https://github.com/rrrishi123/adapters) (ARMS)
+> **Going deeper:** [TRANSPORTS.md](TRANSPORTS.md) (the full 9→2 map) · [docs/one-lean-binary.md](docs/one-lean-binary.md).
+
+</details>
 
 ---
-
 <!-- ===== SHARED TERRITORY (identical across http-mcp · 8 · pilot · adapters) ===== -->
 
 # The Wire — a witnessed substrate for agents
@@ -144,7 +168,6 @@ The model learns **only from what comes back** (afferent); nothing flows *toward
 **Act lives inside Observe** — an act is known only by observing its result. `efferent` (toward the target)
 is one leg; the model's knowledge is built from the `afferent` leg alone.
 
-
 ## Inscription is truth (what may be trusted)
 
 Only the **witnessed record** may be trusted — the ledger, `/manifest`, `/resolve`, the
@@ -166,6 +189,7 @@ findings into law across resurrections. The rule that makes this knowledge and n
 digest keeps a pointer back to the undigested record, so any claim it carries can be re-checked
 against the witness. A mind is its mantra plus its sediment, resurrected by a digest whose
 residue stays auditable.
+
 ## 8 — the witness: observe every tab, control none
 
 8 is the OODA **Observe**. It must see *all* tabs (per-tab memory/CPU/events, including itself)
@@ -273,7 +297,7 @@ flowchart TB
 
 Independent semver **per arm** + a separately-versioned **contract** (trace format, RunRequest/RunResult).
 Each arm declares which contract version it supports; the replay runner checks a trace's contract version
-before replaying. Baseline: **`v0.0.1`** across all four arms.
+before replaying. Baseline: **`v0.0.2`** across all four arms.
 
 ## Why "the wire is enough"
 
@@ -301,3 +325,24 @@ Orients/Decides, witness Observes; **Kalman observability** — you cannot contr
 The full transport candidate list — **HTTP, WebSocket, SSE, MJPEG, Unix socket, gRPC, MQTT, WebRTC** — all reduce to the wire's **two atoms**: `http_request` (CALL) and `bidi_command` (CHANNEL). Raw bytes ⇒ wire; framing/routing/negotiation ⇒ adapter.
 
 → See **[TRANSPORTS.md](./TRANSPORTS.md)** for the full map (prose + Mermaid). Machine-readable: the http-mcp MCP **`transports`** tool returns [`transports.json`](https://github.com/rrrishi123/http-mcp/blob/main/contract/transports/transports.json) verbatim — the map any agent reads first.
+
+## Local stack — drivers & seats
+
+The four-arm system runs a **generic local stack** (no cloud). Two drivers bridge
+real targets to the wire, and every target becomes a **seat** on 8:
+
+| driver | bridges | seat(s) on 8 |
+|---|---|---|
+| **geckodriver** (`scripts/up.sh`) | Firefox | `fox` (CHANNEL, BiDi) + a request seat (CALL, classic WebDriver) — same browser, two physics |
+| **Appium** (`scripts/devices.sh`) | real iOS / Android | one CALL seat per connected device |
+
+`scripts/devices.sh` starts a local Appium server, enumerates connected devices
+(`adb` + libimobiledevice), creates one session per device **through the wire**
+(`http_request` POST `<hub>/session` — the CALL atom), and registers each as a
+seat. 8 then sees + drives every seat on the same call-path — `/shot` (screenshot),
+`/source` (UI tree), `/act` (W3C tap/swipe/type). The cockpit canvas lays a live
+viewport per seat; bird's-eye shows Firefox + every device at once.
+
+iOS needs WebDriverAgent signed with a provisioning profile on the device; if a
+session create fails on signing, that is the only blocker. Cloud (LambdaTest etc.)
+is a separate, vast concern handled in `adapters`, not the lean local stack.
