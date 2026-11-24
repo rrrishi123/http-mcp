@@ -9,9 +9,8 @@ route-floor probe.
 
 ## Branch model
 
-Work targets `release/v0.0.2`. Do not push to `main` or mint tags without an
-explicit release decision — the four-system holds the v0.0.3 cut behind an
-operator greenlight.
+Work targets `next`. Do not push to `main` or mint tags without an
+explicit release decision (see 8's `docs/branch-and-release-convention.md`).
 
 ## Conventions
 
