@@ -297,7 +297,7 @@ flowchart TB
 
 Independent semver **per arm** + a separately-versioned **contract** (trace format, RunRequest/RunResult).
 Each arm declares which contract version it supports; the replay runner checks a trace's contract version
-before replaying. Baseline: **`v0.0.2`** across all four arms.
+before replaying. Baseline: **`v0.0.5`** across all four arms.
 
 ## Why "the wire is enough"
 
