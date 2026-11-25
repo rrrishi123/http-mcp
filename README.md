@@ -11,7 +11,7 @@ go test ./internal/httpx/ -run TestCall -v   # hermetic proof of the CALL atom: 
 python3 test/wire-mock.py                     # optional: a live mock on 127.0.0.1:8791 to drive through the real http_request tool
 ```
 
-Point an agent at `.bin/http-mcp` as an MCP server and its whole tool surface is: `http_request`, `bidi_command`, `discover`, `transports`.
+Point an agent at `.bin/http-mcp` as an MCP server and its whole tool surface is: `http_request`, `bidi_command`, `discover`, `transports`, `become`.
 
 ## What you get
 
