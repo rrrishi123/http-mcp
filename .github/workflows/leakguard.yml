@@ -22,7 +22,16 @@ jobs:
           DENY='omarchy|/Users/[a-z]|/home/[a-z]|(^|[^0-9])10\.(104|255|83)\.|(^|[^0-9])100\.(8[0-9]|9[0-9])\.|rishirajs|design-reference/_ds|(^|/)kosaten/'
           base="${{ github.event.pull_request.base.sha }}"
           if [ -z "$base" ]; then base="${{ github.event.before }}"; fi
-          if [ -z "$base" ] || ! git cat-file -e "$base" 2>/dev/null; then base="$(git rev-list --max-parents=0 HEAD | tail -1)"; fi
+          # A fresh branch's first push has before=0000…0 (or empty). The old fallback
+          # diffed ROOT..HEAD — the whole history — and tripped on lines that merely
+          # DOCUMENT a gitignored private path (#9588: same sha failed then passed).
+          # Scan the branch's own changes instead: its merge-base with next (then main).
+          case "$base" in ""|0000000000000000000000000000000000000000) base="";; esac
+          if [ -z "$base" ] || ! git cat-file -e "$base" 2>/dev/null; then
+            git fetch -q origin next main 2>/dev/null || true
+            base="$(git merge-base HEAD origin/next 2>/dev/null || git merge-base HEAD origin/main 2>/dev/null || git rev-list --max-parents=0 HEAD | tail -1)"
+          fi
+          echo "scanning $base..HEAD"
           hits="$(git diff "$base..HEAD" -- . ':(exclude).githooks/*' ':(exclude).github/workflows/leakguard.yml' | grep -E '^\+' | grep -inE "$DENY" | head -40 || true)"
           if [ -n "$hits" ]; then
             echo "::error::private material in the diff (see .githooks/pre-push denylist):"
